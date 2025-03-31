@@ -1,0 +1,58 @@
+# N Lift System Simulation
+
+## Overview
+
+The N Lift System Simulation is a Python-based project designed to simulate the operation of multiple lifts in a building. The simulation generates passenger data, processes lift movements, and visualizes the results through various graphs and statistics.
+
+## Project Structure
+
+- **data_extracting_and_graphing.py**: Contains the `DataExtractingAndGraphing` class responsible for extracting data from the simulation and generating various graphs and statistics.
+- **Nliftsystem.py**: Contains the `NLiftSystem` class that simulates the operation of multiple lifts, including handling passenger orders, moving lifts, and processing stops.
+- **simulation.py**: The main script to run the simulation. It generates passenger data, initializes the lift system, runs the simulation, and visualizes the results.
+- **passenger_order.py**: Contains the `PassengerDataGenerator` class that generates passenger data using Poisson processes for each floor.
+
+## How to Run the Simulation
+
+1. **Install Dependencies**:
+    Ensure you have the required Python libraries installed. You can install them using pip:
+    ```sh
+    pip install pandas matplotlib seaborn scipy
+    ```
+
+2. **Generate and Process Data**:
+    Run the `simulation.py` script to generate passenger data, run the lift simulation, and visualize the results:
+    ```sh
+    python simulation.py
+    ```
+
+3. **View Results**:
+    The results, including graphs and statistics, will be saved in the `Graphs` directory.
+
+## Key Classes and Functions
+
+### DataExtractingAndGraphing
+
+- **extract_and_save_data**: Extracts data from the simulation and saves it to a CSV file.
+- **plot_data**: Generates various graphs and statistics from the simulation data.
+
+### NLiftSystem
+
+- **move**: Moves the specified lift based on its direction.
+- **data_sorter**: Sorts pending orders for a lift based on proximity to its current floor.
+- **drop_passenger**: Drops a passenger at their destination floor.
+- **pick_passenger**: Picks up passengers from the current floor.
+- **serve_stop**: Processes all actions for a lift at its current floor.
+- **run_simulation**: Runs the lift simulation.
+
+### PassengerDataGenerator
+
+- **generate_passenger_data**: Generates passenger data over a given duration using Poisson processes.
+- **save_data**: Saves the generated passenger data to a CSV file.
+
+## Customization
+
+You can customize the simulation parameters, such as the number of floors, number of lifts, passenger arrival rates, and simulation duration, by modifying the relevant variables in the `simulation.py` script.
+
+## Author
+
+Shreyansh

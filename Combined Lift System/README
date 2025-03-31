@@ -1,0 +1,61 @@
+# Elevator Simulation Project
+
+This project simulates the operation of elevators in a building with varied passenger arrival times and different traffic levels. The simulation includes single lift, dual lift, and oscillation systems.
+
+## Project Structure
+
+- `combined_simulation.py`: Main script to run the simulation for different scenarios.
+- `data_extracting_and_graphing.py`: Contains functions to extract data from the simulation and generate graphs.
+- `dual_system.py`: Implements the dual lift system.
+- `oscillation.py`: Implements the dual oscillation system.
+- `passenger_order.py`: Generates passenger data for the simulation.
+
+## How to Run
+
+1. **Generate Passenger Data**:
+    - Modify the `lambda_passenger_per_floor` values in `combined_simulation.py` to set the passenger arrival rates for each floor.
+    - Run the `combined_simulation.py` script to generate passenger data and run the simulation.
+
+2. **Run Simulation**:
+    - The simulation can be run for different traffic levels and number of floors by modifying the `traffic_levels`, `durations`, and `passenger_limits` dictionaries in `combined_simulation.py`.
+
+3. **Visualize Data**:
+    - The `data_extracting_and_graphing.py` script will generate graphs and statistics based on the simulation results.
+
+## Dependencies
+
+- `pandas`
+- `numpy`
+- `matplotlib`
+- `seaborn`
+- `scipy`
+
+Install the dependencies using:
+```bash
+pip install pandas numpy matplotlib seaborn scipy
+```
+
+## Example Usage
+
+```python
+# Generate passenger data
+generator = PassengerDataGenerator(
+     number_of_floors=5,
+     file_path="passenger_data.csv",
+     current_time=0,
+     lambda_passenger_per_floor=[0.5] * 6
+)
+generator.generate_passenger_data(duration=36000)  # Generate data for 10 hours
+generator.save_data()
+
+# Run the simulation
+run_multiple_scenarios()
+```
+
+## Output
+
+The simulation will generate CSV files with passenger data and graphs showing various metrics such as waiting times, service times, and passenger arrivals.
+
+## Author
+
+Shreyansh

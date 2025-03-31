@@ -1,0 +1,57 @@
+# Dual Lift System Simulation
+
+This project simulates a dual lift (elevator) system to analyze and optimize the performance of elevators in a building with multiple floors. The simulation includes generating passenger data, running the lift system, and visualizing the results.
+
+## Project Structure
+
+- **dual_system.py**: Contains the implementation of the `DualLiftSystem` class, which simulates the behavior of two lifts in a building.
+- **passenger_order.py**: Contains the `PassengerDataGenerator` class, which generates passenger data using Poisson processes for each floor.
+- **simulation.py**: The main script to run the simulation, generate passenger data, and process the results.
+- **data_extracting_and_graphing_new.py**: Contains the `DataExtractingAndGraphing` class, which extracts data from the simulation and generates various plots and statistics.
+
+## How to Run the Simulation
+
+1. **Generate Passenger Data**: The `PassengerDataGenerator` class in `passenger_order.py` generates passenger data based on Poisson processes for each floor.
+
+2. **Run the Simulation**: The `DualLiftSystem` class in `dual_system.py` simulates the behavior of two lifts based on the generated passenger data.
+
+3. **Visualize Results**: The `DataExtractingAndGraphing` class in `data_extracting_and_graphing_new.py` extracts data from the simulation and generates various plots and statistics to analyze the performance of the lift system.
+
+## Example Usage
+
+To run the simulation, you can use the `run_multiple_scenarios` function in `simulation.py`. This function runs the simulation for different traffic levels and number of floors, and generates the corresponding plots and statistics.
+
+```python
+# Main execution
+run_multiple_scenarios()
+```
+
+## Output
+
+The simulation generates various output files, including:
+
+- CSV files containing the generated passenger data and the results of the simulation.
+- Text files containing statistics about waiting times and total service times.
+- Graphs visualizing the performance of the lift system, including histograms, scatter plots, and heatmaps.
+
+## Dependencies
+
+- pandas
+- numpy
+- matplotlib
+- seaborn
+- scipy
+
+Make sure to install the required dependencies before running the simulation.
+
+```bash
+pip install pandas numpy matplotlib seaborn scipy
+```
+
+## Logging
+
+The simulation uses logging to record debug and error messages. The log file `simulation_debug.log` contains detailed information about the simulation process.
+
+## Author
+
+Shreyansh

@@ -1,0 +1,16 @@
+iteration: 42
+System used: Adaptive
+Number of floors: 40
+Number of passengers: 891
+traffic: moderate
+Waiting Time Statistics:
+Min: 0
+Max: 7346
+Mean: 2445.030303030303
+Std: 2024.881939735552
+
+Total Service Time Statistics:
+Min: 13
+Max: 7428
+Mean: 2512.0931537598203
+Std: 2032.109074659288

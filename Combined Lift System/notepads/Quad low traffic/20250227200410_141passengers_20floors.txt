@@ -1,0 +1,16 @@
+iteration: 20
+System used: N_lift
+Number of floors: 20
+Number of passengers: 141
+traffic: low
+Waiting Time Statistics:
+Min: 0
+Max: 194
+Mean: 34.666666666666664
+Std: 36.746363603698775
+
+Total Service Time Statistics:
+Min: 7
+Max: 218
+Mean: 72.02127659574468
+Std: 45.44721712132602

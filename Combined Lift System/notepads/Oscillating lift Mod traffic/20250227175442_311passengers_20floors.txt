@@ -1,0 +1,16 @@
+iteration: 58
+System used: oscillation
+Number of floors: 20
+Number of passengers: 311
+traffic: moderate
+Waiting Time Statistics:
+Min: 0
+Max: 79
+Mean: 37.92282958199357
+Std: 22.509936724088696
+
+Total Service Time Statistics:
+Min: 4
+Max: 149
+Mean: 66.78456591639872
+Std: 28.848803067718354

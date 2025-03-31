@@ -1,0 +1,16 @@
+iteration: 55
+System used: dual
+Number of floors: 5
+Number of passengers: 54
+traffic: low
+Waiting Time Statistics:
+Min: 0
+Max: 25
+Mean: 7.592592592592593
+Std: 5.399226074933887
+
+Total Service Time Statistics:
+Min: 8
+Max: 53
+Mean: 18.5
+Std: 8.179011334818796

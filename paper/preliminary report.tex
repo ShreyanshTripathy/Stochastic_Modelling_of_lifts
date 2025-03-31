@@ -1,0 +1,355 @@
+\documentclass[12pt,a4paper]{report}
+
+% Packages
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{geometry}
+\geometry{margin=1in}
+\usepackage{setspace}
+\usepackage{titlesec}
+\frenchspacing 
+
+% Formatting
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries}{\chaptername\ \thechapter}{20pt}{\Huge}
+
+\title{Preliminary Thesis Report}
+\author{Shreyansh Tripathy}
+\date{1\textsuperscript{st} January 2025}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\chapter{Introduction}
+The inspiration for this project stems from the prolonged waiting times experienced in the hostel lifts at Azim Premji University. These delays often lead to frustration and delays in reaching our classes, prompting the need for a systematic study to optimize the lift system. The primary goal is to create a lift system that is efficient. By analyzing various parameters and their impact on lift performance, we aim to identify strategies to minimize waiting times and improve overall efficiency. Additionally, if possible, the project also aims to reduce the power consumption of the lifts. This study will contribute to the design of more effective lift systems, enhancing user experience and operational effectiveness.
+
+This report serves as a preliminary draft of the thesis, summarizing the work completed during the last semester and the current winter break. The aim of this report is to document the progress since the last Honour Presentation. Since that day additional proegress has been made. A program was developed to verify whether the passenger creation is indedd apoisson process. Furthermore, all programs were extensively updated based on the feedback provided by the professor, ensuring they align with the suggested improvements. The updated programs were then run, and debugging is currently underway to ensure their perfect execution. As a result, the results and data collection for the systems made during the winter break are yet to be completed.
+The new systems that were developed during the break are the following:
+\begin{itemize}
+    \item Quad Lift System
+    \item N Lift System
+    \item VIP Lift System
+    \item Adaptive Lift System
+\end{itemize}
+The old systems that were already in place:
+\begin{itemize}
+    \item Single Lift system
+    \item Dual Lift system
+    \item Dual Metro system
+\end{itemize}
+
+Each of these systems was designed and implemented to address specific challenges that we could identify.
+
+\chapter{Results}
+\section{Overview}
+Before the Winter break all the older systems were refined and test runs were made to collect data and this is what we have found.
+\subsection{Elevator systems before Sem 5}
+\begin{itemize}
+    \item Single Lift System:
+    \begin{itemize}
+        \item Works well in small buildings with low passenger density.
+        \item Fails in high-density cases.
+    \end{itemize}
+    \item Dual Lift System:
+    \begin{itemize}
+        \item Reduces wait times compared to the single lift system.
+        \item Requires better coordination for high-density traffic.
+    \end{itemize}
+    \item Dual Metro Lift System:
+    \begin{itemize}
+        \item Performs best for high-density traffic in small buildings.
+        \item Faces inefficiencies due to unnecessary stops on non-demand floors.
+    \end{itemize}
+\end{itemize}
+
+\subsection{Data (sem 5)}
+The following results for the new systems are based on raw data obtained from preliminary runs. These results have not been finalized and are subject to refinement after code verification.
+\subsection{During Sem 5}
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|}
+        \hline
+        Metric               & System                & Average Time (units) \\ \hline
+        Waiting Time         & Dual Lift System      & 17.37                \\ \hline
+        Total Service Time   & Dual Lift System      & 38.75                \\ \hline
+        Waiting Time         & Single Lift System    & 19.62                \\ \hline
+        Total Service Time   & Single Lift System    & 30.38                \\ \hline
+        Waiting Time         & Dual Metro System     & 6.78                 \\ \hline
+        Total Service Time   & Dual Metro System     & 14.38                \\ \hline
+    \end{tabular}
+    \caption{270 people in a 5-floor (high-traffic) building who arrived over 3600 units of time}
+    \label{tab:lift_data 1}
+\end{table}
+
+\subsection{During the Winter holidays}
+
+% Table: 5 floors, High Traffic
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+\textbf{Time Type}    & \textbf{Number of Floors} & \textbf{Traffic} & \textbf{System}     & \textbf{Time (units)} \\ \hline
+Waiting Time         & 5                     & High             & Dual Lift System               & 10.35              \\ \hline
+Service Time         & 5                     & High             & Dual Lift System               & 21.52              \\ \hline
+Waiting Time         & 5                     & High             & Single Lift System            & 10.5               \\ \hline
+Service Time         & 5                     & High             & Single Lift System         & 17.5               \\ \hline
+Waiting Time         & 5                     & High             & Dual Metro System         & 8.56               \\ \hline
+Service Time         & 5                     & High             & Dual Metro System         & 18.92              \\ \hline
+Waiting Time         & 5                     & High             & Adaptive Lift System         & 12.59              \\ \hline
+Service Time         & 5                     & High             & Adaptive Lift System         & 27.44              \\ \hline
+\end{tabular}
+\caption{Performance Metrics for 5 floors, High Traffic (approximately 300people in 3600 units of time)}
+\end{table}
+
+% Table: 5 floors, Moderate Traffic
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+\textbf{Time Type}    & \textbf{Number of Floors} & \textbf{Traffic} & \textbf{System}     & \textbf{Time (units)} \\ \hline
+Waiting Time         & 5                     & Moderate         & Dual Lift System               & 7.55               \\ \hline
+Service Time         & 5                     & Moderate         & Dual Lift System               & 19.03              \\ \hline
+Waiting Time         & 5                     & Moderate         & Single Lift System & 7.88               \\ \hline
+Service Time         & 5                     & Moderate         & Single Lift System             & 13.67              \\ \hline
+Waiting Time         & 5                     & Moderate         & Dual Metro System         & 8.76               \\ \hline
+Service Time         & 5                     & Moderate         & Dual Metro System         & 18.86              \\ \hline
+Waiting Time         & 5                     & Moderate             & Adaptive Lift System         & 12.56             \\ \hline
+Service Time         & 5                     & Moderate         & Adaptive Lift System         & 25.8             \\ \hline
+\end{tabular}
+\caption{Performance Metrics for 5 floors, Moderate Traffic (125 people in 3600 units of time)}
+\end{table}
+
+% Table: 5 floors, Low Traffic
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+\textbf{Time Type}    & \textbf{Number of Floors} & \textbf{Traffic} & \textbf{System}     & \textbf{Time (units)} \\ \hline
+Waiting Time         & 5                     & Low              & Dual Lift System               & 11.02              \\ \hline
+Service Time         & 5                     & Low              & Dual Lift System               & 23.72              \\ \hline
+Waiting Time         & 5                     & Low              & Single Lift System             & 7.26               \\ \hline
+Service Time         & 5                     & Low              & Single Lift System             & 15.26              \\ \hline
+Waiting Time         & 5                     & Low              & Dual Metro System              & 7.2                \\ \hline
+Service Time         & 5                     & Low              & Dual Metro System              & 15.76              \\ \hline
+Waiting Time         & 5                     & Low         & Adaptive Lift System           & 17.18             \\ \hline
+Service Time         & 5                     & Low         & Adaptive Lift System           & 35.09            \\ \hline
+\end{tabular}
+\caption{Performance Metrics for 5 floors, Low Traffic (15 people in 3600 units of time)}
+\end{table}
+
+% Table: 20 floors, High Traffic
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+\textbf{Time Type}    & \textbf{Number of Floors} & \textbf{Traffic} & \textbf{System}     & \textbf{Time (units)} \\ \hline
+Waiting Time         & 20                    & High             & Dual Lift System              & 32.57              \\ \hline
+Service Time         & 20                    & High             & Dual Lift System               & 54.02              \\ \hline
+Waiting Time         & 20                    & High             & Single Lift System            & 39.03              \\ \hline
+Service Time         & 20                    & High             & Single Lift System            & 68.39              \\ \hline
+Waiting Time         & 20                    & High             & Dual Metro System         & 56.98              \\ \hline
+Service Time         & 20                    & High             & Dual Metro System         & 77.08              \\ \hline
+Waiting Time         & 20                     & High         & Adaptive Lift System           & 88.56             \\ \hline
+Service Time         & 20                     & High         & Adaptive Lift System           & 122.82            \\ \hline
+\end{tabular}
+\caption{Performance Metrics for 20 floors, High Traffic (700 people in 7200 units of time)}
+\end{table}
+
+% Table: 20 floors, Moderate Traffic
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+\textbf{Time Type}    & \textbf{Number of Floors} & \textbf{Traffic} & \textbf{System}     & \textbf{Time (units)} \\ \hline
+Waiting Time         & 20                    & Moderate         & Dual Lift System               & 23.86              \\ \hline
+Service Time         & 20                    & Moderate         & Dual Lift System               & 49.6               \\ \hline
+Waiting Time         & 20                    & Moderate         & Single Lift System             & 38.85              \\ \hline
+Service Time         & 20                    & Moderate         & Single Lift System  & 80.22              \\ \hline
+Waiting Time         & 20                    & Moderate         & Dual Metro System  & 47.7               \\ \hline
+Service Time         & 20                    & Moderate         & Dual Metro System  & 68.26              \\ \hline
+Waiting Time         & 20                     & Moderate         & Adaptive Lift System           & 83.88            \\ \hline
+Service Time         & 20                     & Moderate         & Adaptive Lift System           & 126.5            \\ \hline
+\end{tabular}
+\caption{Performance Metrics for 20 floors, Moderate Traffic (400 people in 7200 units of time)}
+\end{table}
+
+% Table: 20 floors, Low Traffic
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+\textbf{Time Type}    & \textbf{Number of Floors} & \textbf{Traffic} & \textbf{System}     & \textbf{Time (units)} \\ \hline
+Waiting Time         & 20                    & Low              & Dual Lift System               & 38.83              \\ \hline
+Service Time         & 20                    & Low              & Dual Lift System               & 73.76              \\ \hline
+Waiting Time         & 20                    & Low              & Single Lift System& 32.47              \\ \hline
+Service Time         & 20                    & Low              & Single Lift System & 63                 \\ \hline
+Waiting Time         & 20                    & Low              & Dual Metro System  & 54.76              \\ \hline
+Service Time         & 20                    & Low              & Dual Metro System  & 76.59              \\ \hline
+Waiting Time         & 20                     & Low         & Adaptive Lift System           & 47.97            \\ \hline
+Service Time         & 20                     & Low         & Adaptive Lift System           & 84.14            \\ \hline
+\end{tabular}
+\caption{Performance Metrics for 20 floors, Low Traffic (50 people in 7200 units of time)}
+\end{table}
+% Table : 40 
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+\textbf{Time Type}    & \textbf{Number of Floors} & \textbf{Traffic} & \textbf{System}     & \textbf{Time (units)} \\ \hline
+Waiting Time         & 40                    & High              & Dual Lift System               & 42.47            \\ \hline
+Service Time         & 40                    & High              & Dual Lift System               & 78.21              \\ \hline
+Waiting Time         & 40                    & High              & Single Lift System           & 86.51              \\ \hline
+Service Time         & 40                    & High              & Single Lift System & 117.47              \\ \hline
+Waiting Time         & 40                    & High              & Dual Metro System  & 88.21              \\ \hline
+Service Time         & 40                    & High              & Dual Metro System  & 166.87              \\ \hline
+Waiting Time         & 40                     & High         & Adaptive Lift System           & 131.13            \\ \hline
+Service Time         & 40                     & High         & Adaptive Lift System           & 179.29            \\ \hline
+\end{tabular}
+\caption{Performance Metrics for 40 floors, High Traffic (800 people in 14400 units of time)}
+\end{table}
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+\textbf{Time Type}    & \textbf{Number of Floors} & \textbf{Traffic} & \textbf{System}     & \textbf{Time (units)} \\ \hline
+Waiting Time         & 40                    & Moderate              & Dual Lift System               & 43.04           \\ \hline
+Service Time         & 40                    & Moderate              & Dual Lift System               & 71.79             \\ \hline
+Waiting Time         & 40                    & Moderate              & Single Lift System            & 59.76             \\ \hline
+Service Time         & 40                    & Moderate              & Single Lift System            & 81.83              \\ \hline
+Waiting Time         & 40                    & Moderate              & Dual Metro System  & 84.26             \\ \hline
+Service Time         & 40                    & Moderate              & Dual Metro System  & 144.84              \\ \hline
+Waiting Time         & 40                     & Moderate         & Adaptive Lift System           & 66.35            \\ \hline
+Service Time         & 40                     & Moderate         & Adaptive Lift System           & 97.1            \\ \hline
+\end{tabular}
+\caption{Performance Metrics for 40 floors, Moderate Traffic (600 people in 14400 units of time)}
+\end{table}
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+\textbf{Time Type}    & \textbf{Number of Floors} & \textbf{Traffic} & \textbf{System}     & \textbf{Time (units)} \\ \hline
+Waiting Time         & 40                    & Low              & Dual Lift System               & 44.59          \\ \hline
+Service Time         & 40                    & Low              & Dual Lift System               & 82.35            \\ \hline
+Waiting Time         & 40                    & Low              & Single Lift System            & 54.76            \\ \hline
+Service Time         & 40                    & Low              & Single Lift System            & 76.59             \\ \hline
+Waiting Time         & 40                    & Low              & Dual Metro System  & 80.52            \\ \hline
+Service Time         & 40                    & Low              & Dual Metro System  & 134.56              \\ \hline
+Waiting Time         & 40                     & Low       & Adaptive Lift System           & 58.53             \\ \hline
+Service Time         & 40                     & Low         & Adaptive Lift System         & 91.89             \\ \hline
+\end{tabular}
+\caption{Performance Metrics for 40 floors, Low Traffic (300 people in 14400 units of time)}
+\end{table}
+
+
+From the data, it can be observed:
+\begin{itemize}
+    \item The \textbf{Dual Metro System} is significantly more efficient in small building with high density (table 2.1):
+    \begin{itemize}
+        \item \textbf{65.41\%} better in terms of waiting time compared to the Single Lift System.
+        \item \textbf{60.93\%} better in terms of waiting time compared to the Dual Lift System.
+    \end{itemize}
+    \item Surprisingly, for low density traffic in 5 floors and 20 floors the Dual Metro System is working really well.
+    \item In rest of the data the dual lift system is working the best.
+    \item It can be observed that the the adaptive system also has a descent performance.
+\end{itemize}
+These are, as mentioned before, are just preliminary results and proper verification and running of the code is required to get more concrete data.
+
+\chapter{Expected Results}
+\section{Predictions for System Performance}
+The following section outlines the expected behavior of each of the new lift system under varying passenger densities and building sizes. These predictions are based on system design and observed trends in similar models. The codes are ready but need refinement before data collection.
+
+\begin{itemize}
+    \item \textbf{Quad Lift System:}
+    \begin{itemize}
+        \item Small Buildings, Low Density: Similar performance to the dual lift system, with minimal waiting times due to low demand.
+        \item Small Buildings, High Density: Improved efficiency compared to dual lift systems due to better load distribution.
+        \item Large Buildings, High Density: Optimal performance with significant reductions in wait and service times.
+    \end{itemize}
+    \item \textbf{N Lift System:}
+    \begin{itemize}
+        \item Small Buildings, Low Density: Potentially slower than simpler systems due to generalization overhead.
+        \item Small Buildings, High Density: Efficient handling of increased demand but may not outperform tailored systems for fixed numbers of lifts.
+        \item Large Buildings, High Density: Highly effective and scalable solution for varying demand.
+    \end{itemize}
+    \item \textbf{VIP Lift System:}
+    \begin{itemize}
+        \item Small Buildings, Low Density: Efficiency depends on the demand for the specific floor served. If the demand of on a single floor is high then it can be effcient because one lift caters just to the high density floor. However, in general this can be a unnecessary system as a songle lift should be good enough for the building.
+        \item Small Buildings, High Density: Here also it will be inefficient, as for small building with high density the probability that a demand is on everyfloor is pretty high this implies that if one lift only caters to one floor, the work load on the lift increases significantly, this means that although the wait time for the "VIP Floor" reduces the overall wait time for all the people increases signficantly.
+        \item Large Buildings, High Density: Again this system is not suited here as the high density will mean that the load on the other lift is very high thus making the overall wait time very high.
+        \item Special Case: This lift is efficient only at times when the density of people on one floor is abnormaly higher than other floors then the VIP lift helps reduce the load by catering to that one floor while the other lift caters to the rest. This abnormal behavior can be seen in hostel buildings in the afternoon where people returning from classes call for elevators on the ground floor thus causing the density of the ground floor to increase by a lot.
+    \end{itemize}
+    \item \textbf{Adaptive Lift System:}
+    \begin{itemize}
+        \item This lift system can be very efficient and inefficient based on the parameters we give it. This system works based on the density range we give it. When it goes above or below a threshold density it switches between systems to reduce the waiting times of people.
+    \end{itemize}
+\end{itemize}
+
+
+\chapter{Quad Lift System}
+\section{Overview}
+The Quad Lift System, as the name suggests, is designed for larger buildings that require four elevators operating together efficiently.
+
+\section{Design and Implementation}
+The working principle of this system is similar to that of a dual lift system, but with some notable differences. While the dual lift system is specifically tailored for two elevators, accounting for all possible scenarios in its design, the quad lift system adopts a more generalized approach. It serves as a stepping stone towards developing an N Lift System, which can manage any number of elevators.
+
+The primary advantage of the quad lift system lies in its improved efficiency compared to the dual lift system code. By focusing on a more adaptable architecture, it provides the flexibility needed for scaling up the system to handle more elevators in the future.
+
+\chapter{N Lift System}
+\section{Overview}
+The N Lift System is a software framework capable of coordinating the operation of any number of elevators. Inspired by the quad lift system, this code was developed with scalability and adaptability in mind. Although the initial development phase is complete and no significant errors have been identified, I am conducting multiple test runs to ensure the system functions flawlessly.
+
+\section{Design and Implementation}
+The architecture of the N Lift System is designed to be both highly efficient and versatile. However, this generalization comes with a slight tradeoff: it may not be as precise as a system specifically optimized for a fixed number of elevators (e.g., N=2). For instance, if the system is configured for two elevators, its performance may differ slightly from the highly tailored dual lift system. Despite this minor drawback, the N Lift System is a robust solution for managing elevator operations across a wide range of configurations.
+
+\chapter{VIP Lift System}
+\section{Overview}
+The VIP Lift System is designed for special-use cases where one elevator is dedicated exclusively to serving a single floor. This system is typically integrated with the Adaptive Lift System for enhanced functionality and flexibility.
+
+\section{Design and Implementation}
+The architecture of the VIP Lift System is similar to that of the dual lift system, with one key difference: one of the elevators is restricted to serving a single floor only. This specialization ensures priority and convenience for VIP passengers or critical operations on that floor.
+
+This system can be very inefficient when used as a standalone system thus it is integrated with the Adaptive lift system.
+
+\chapter{Adaptive Lift System}
+\section{Overview}
+The Adaptive Lift System is designed to dynamically adjust its operations based on fluctuations in passenger density. By switching between different system modes, it optimizes elevator performance to meet varying demands.
+
+\section{Design and Implementation}
+The system follows a set of rules to adapt to changes in passenger density, ensuring the most efficient configuration at any given time. The core switching logic includes:
+\begin{itemize}
+    \item Dual Metro Lift System: If the passenger density on multiple floors exceeds a predefined threshold and is similar across these floors, the system switches to a metro-like mode. In this mode, several floors are served simultaneously by multiple lifts, reducing wait times and improving efficiency.
+    \item VIP Lift System: If only one floor experiences a high passenger density while others remain relatively low, the system switches to VIP lift mode. This mode dedicates an elevator to serve the high-density floor until its load decreases, ensuring that VIP passengers or critical needs are prioritized.
+\end{itemize}
+This adaptive approach allows the system to effectively handle different scenarios, ensuring maximum efficiency and reducing operational costs in varying conditions.
+
+\section{Logic of the code}
+\subsection{Passenger Density Calculation}
+Passenger density is calculated by tracking the number of passengers arriving on each floor within a specified time interval (\(\Delta t\)). A threshold density is defined for each floor. If the number of passengers on a floor exceeds the threshold within \(\Delta t\), it is classified as a high-demand scenario for that floor.
+\subsection{Switching systems}
+The default elevator system for the model is the \textbf{Dual Lift system}. Initially, the plan was to define a threshold density for transitioning to either the \textbf{VIP Lift System} or the \textbf{Dual Metro Lift System}. Whenever the passenger density crossed the threshold, the program would switch to the appropriate system.
+
+However, this approach led to a problem known as the \textbf{hysteresis problem}. The issue arises because once the system switches-for instance, to the Dual Metro Lift System-and picks up passengers, the density on that floor decreases. This causes the system to revert back to the default Dual Lift System. This continuous back-and-forth switching reduces the efficiency, and defeat the purpose of an adaptive system.
+
+To solve this, we modified the approach by introducing a \textbf{range} instead of a strict threshold to control the switching behavior. When the density exceeds the \textit{upper limit} of the range, the system prepares to switch modes but does not transition immediately. Instead, it waits for a specified period to confirm that the increase in density is sustained. This delay ensures that the observed change is not due to a short-term fluctuation but represents a consistent demand that justifies the switch. Additionally, this waiting period can be utilized to analyze the \textbf{rate of change} of density, which can be used to further optimize the system.
+
+Similarly, when the density drops below the \textit{lower limit} of the range, the system prepares to revert to the default Dual Lift System. However, it again waits for a certain period before making the change, ensuring that the decrease is stable and not a random/sudden event. This dual-range system \textbf{intentionally introduces hysteresis}, but in a controlled manner that prevents rapid oscillations. This approach strikes a balance between \textit{responsiveness and stability}, ensuring that the system adapts effectively to changing conditions while avoiding unnecessary switching.
+
+\chapter{Conclusion and Future Work}
+This report documents the progress in the project after the last presentation. Moving forward, the focus will be on:
+\begin{itemize}
+    \item Making sure all the new systems are perfect.
+    \item Run all the lift systems and obtain the Data to draw final conclusion (especially from adaptive lift system and N lift system).
+\end{itemize}
+
+\appendix
+\chapter{Appendix}
+The full code is available at:
+\url{https://github.com/ShreyanshTripathy/Honours.git}
+
+\end{document}

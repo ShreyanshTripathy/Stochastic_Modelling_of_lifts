@@ -1,0 +1,77 @@
+\documentclass[12pt]{report}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+
+\title{Stochastic Modelling of Lift}
+\author{Shrey}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This report presents the stochastic modelling of lift. The aim is to analyze and simulate the behavior of lift systems using stochastic processes.
+\end{abstract}
+
+\tableofcontents
+\renewcommand{\thesection}{\arabic{section}}
+\pagebreak
+\section{Introduction}
+\label{chap:intro}
+The inspiration for this project stems from the prolonged waiting times experienced in the hostel lifts at Azim Premji University. These delays often lead to frustration and delays in reaching our classes, prompting the need for a systematic study to optimize the lift system. The primary goal is to create a lift system that is efficient. By analyzing various parameters and their impact on lift performance, we aim to identify strategies to minimize waiting times and improve overall efficiency. Additionally, if possible, the project also aims to reduce the power consumption of the lifts. This study will contribute to the design of more effective lift systems, enhancing user experience and operational effectiveness.
+\pagebreak
+\section{Literature Review}
+\label{chap:literature}
+\pagebreak
+\section{Methodology}
+\label{chap:methodology}
+
+The methodology for this study involves three main steps:
+
+\subsection{Passenger Demand}
+We create passenger demand by modeling the arrival of passengers as a Poisson process on each floor. This stochastic process helps in simulating the random nature of passenger arrivals, which is crucial for realistic modeling of lift usage.
+
+\subsection{Lift Systems}
+We design and implement different types of lift systems to evaluate their performance. The lift systems considered in this study are:
+\begin{itemize}
+    \item \textbf{Single Lift System:} A common system with one lift serving all floors.
+    \item \textbf{Dual Lift System:} Another common system with two lifts serving all floors.
+    \item \textbf{Metro-like System:} A system where lifts operate in a manner similar to metro trains, where they start on the opposite ends of the building and stop on every floor (station) whether or not they are being called or not.
+    \item \textbf{Adaptive System:} An advanced system that adapts to passenger demand in real-time to optimize performance. This system swtiches betweent the previously mentioned systems based on the current demand but also fourth system where a single lift goes to the floor with the highest demand which we call the \textbf{VIP-Lift System}.
+\end{itemize}
+
+\subsection{Performance Evaluation}
+We simulate the different lift systems and make them race against each other to determine which system performs the best. The performance metrics considered include:
+\begin{itemize}
+    \item Average waiting time for passengers.
+    \item Total travel time.
+\end{itemize}
+By comparing these metrics, we aim to identify the most efficient lift system for reducing waiting times and improving overall operational effectiveness. The aim is to get to a point were this is like a formula where once we know the kind of building and the kind of people using the lift we can just plug in the values and get the best lift system for that building.
+
+
+\pagebreak
+\section{Results and Discussion}
+\label{chap:results}
+
+
+
+\pagebreak
+\section{Conclusion}
+\label{chap:conclusion}
+
+\pagebreak
+\bibliographystyle{plain}
+
+\pagebreak
+\appendix
+\section*{Appendix A}
+\label{chap:appendixA}
+
+
+\end{document}

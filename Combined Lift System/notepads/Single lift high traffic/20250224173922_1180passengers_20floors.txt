@@ -1,0 +1,16 @@
+iteration: 8
+System used: single
+Number of floors: 20
+Number of passengers: 1180
+traffic: high
+Waiting Time Statistics:
+Min: 3
+Max: 9147
+Mean: 2444.416949152542
+Std: 2357.501556778469
+
+Total Service Time Statistics:
+Min: 12
+Max: 9158
+Mean: 2482.6449152542373
+Std: 2354.9644600988486
