@@ -203,9 +203,6 @@ class DualLiftSystem:
         elif lift_direction < 0 and direction > 0:
             if any(tup[2] < current_floor for tup in copy_list):
                 dont_pick = True
-                
-        
-                
 
         return dont_pick
 
