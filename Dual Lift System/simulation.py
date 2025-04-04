@@ -1,8 +1,7 @@
 import logging
 import gc
 from datetime import datetime
-# from Dual_system import DualLiftSystem
-from trial import DualLiftSystem
+from Terstingnew import DualLiftSystem
 from passenger_order import PassengerDataGenerator
 from data_extracting_and_graphing import DataExtractingAndGraphing
 import sys
@@ -75,8 +74,7 @@ def generate_and_process_data(l, file_path,duration,current_floor_A, current_flo
         logging.debug("Initializing elevator simulation.")
         permission = "yes"
         if permission == "yes":
-            # elevator = DualLiftSystem(passenger_data=data,current_floor_A=current_floor_A,current_floor_B=current_floor_B,num_floors=num_floors,filepath=file_path,Passenger_limit=passenger_limit,current_time=current_timestamp)
-            elevator = DualLiftSystem(current_floor_A=current_floor_A,current_floor_B=current_floor_B,num_floors=num_floors,filepath=file_path,Passenger_limit=passenger_limit,current_time=current_timestamp)
+            elevator = DualLiftSystem(current_floor_A=current_floor_A,current_floor_B=current_floor_B,num_floors=num_floors,filepath=file_path,Passenger_limit=passenger_limit,current_time=current_timestamp, floor_time=1, passenger_inout=1 )
         else:
             print("Program terminated. Exiting...")
             sys.exit()
@@ -129,11 +127,11 @@ def run_multiple_scenarios():
     traffic_levels = {
         "low_traffic": {
             # 5: [0.005] + [0.0002] * 5,   # Ground floor higher than others
-            20: [0.00001] + [0.00005] * 20,
+            # 20: [0.00001] + [0.00005] * 20,
             # 40: [0.002] + [0.0004] * 40
         },
         "moderate_traffic": {
-            # 5: [0.01] + [0.005]*5,
+            5: [0.01] + [0.005]*5,
             # 20: [0.001] + [0.0007] * 20,
             # 40: [0.004] + [0.0009] * 40
         },
@@ -145,28 +143,27 @@ def run_multiple_scenarios():
     }
     
     durations = {
-        # 5: 3600,   # 1 hour
+        5: 3600,   # 1 hour
         # 20: 7200,  # 2 hours
         # 40: 14400  # 4 hours
-        20:30
+        # 20:30
     }
     
     passenger_limits = {
-        # 5: 8,
-        20: 8,
+        5: 8,
+        # 20: 8,
         # 40: 8
     }
 
     # Iterate over each traffic level
     for traffic_level, floor_configs in traffic_levels.items():
-        time.sleep(3)
         for num_floors, l in floor_configs.items():
-            time.sleep(3)
             scenario_name = f"{traffic_level}_{num_floors}"
             duration = durations[num_floors]
             passenger_limit = passenger_limits[num_floors]
             
             file_path = f"{scenario_name}passenger_data{datetime.now().strftime('%Y%m%d%H%M%S')}.csv"
+            # file_path = "mod_2.csv"
 
             
             print(l)

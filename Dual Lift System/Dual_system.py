@@ -6,7 +6,7 @@ class DualLiftSystem:
 
     '''This elevator is trying to simulate the real life situation of passengers arriving at varied times'''
 
-    def __init__(self, current_floor_A,current_floor_B, num_floors,filepath, Passenger_limit, current_time = 0):
+    def __init__(self, current_floor_A,current_floor_B, num_floors,filepath, Passenger_limit,passenger_inout, floor_time,current_time = 0):
         # Initialize the elevator state and load the passenger data from a CSV file
         self.num_floors = num_floors
         self.orders_in_opposite_direction = []
@@ -19,8 +19,8 @@ class DualLiftSystem:
         self.passenger_limit = Passenger_limit
         
         #adding variation in time
-        self.floor_time = 1
-        self.passenger_inout = 3
+        self.floor_time = floor_time
+        self.passenger_inout = passenger_inout
         
         #Lift A
         self.current_floor_A = current_floor_A
@@ -203,9 +203,6 @@ class DualLiftSystem:
         elif lift_direction < 0 and direction > 0:
             if any(tup[2] < current_floor for tup in copy_list):
                 dont_pick = True
-                
-        
-                
 
         return dont_pick
 
@@ -746,56 +743,6 @@ class DualLiftSystem:
 
             self.current_time += self.floor_time + (number_lift_B_picked + number_lift_A_picked + dropped_by_B + dropped_by_A)*self.passenger_inout
             
-            '''                  
-             #checking on each floor to see if there is a passenger going in the same direction as the lift even if he or she was not the closest to the lift and would be efficient
-            for person in list(self.pending_orders_B):
-                self.reassign_passenger(person, self.pending_orders_B, self.pending_orders_A, self.current_floor_A, self.direction_A)
-            for person in list(self.pending_orders_A):
-                self.reassign_passenger(person, self.pending_orders_A, self.pending_orders_B, self.current_floor_B, self.direction_B)
-            
-            print(f"Pending_order_B  = {self.pending_orders_B}")
-            print(f"Pending_order_A  = {self.pending_orders_A}")
-            
-            for person in people_not_assigned[:]:
-                if person in self.pending_orders_A or person in self.pending_orders_B:
-                    people_not_assigned.remove(person)
-                                  
-            for person in list(people_not_assigned):
-                self.reassign_passenger(person,people_not_assigned, self.pending_orders_A, self.current_floor_A, self.direction_A)                     
-                self.reassign_passenger(person,people_not_assigned, self.pending_orders_B, self.current_floor_B, self.direction_B)
-                
-            # Remove duplicates from pending orders and passenger data           
-            if self.pending_orders_A:
-                seen = set()
-                self.pending_orders_A = [x for x in self.pending_orders_A if not (x in seen or seen.add(x))]
-                passenger_data = [x for x in passenger_data if not (x in seen or seen.add(x))]
-                self.pending_orders_A = sorted(self.pending_orders_A, key=lambda x: abs(x[1] - self.current_floor_A), reverse=False if self.direction_A < 0 else True)
-           
-            if self.pending_orders_B:
-                seen = set()
-                self.pending_orders_B = [x for x in self.pending_orders_B if not (x in seen or seen.add(x))]
-                passenger_data = [x for x in passenger_data if not (x in seen or seen.add(x))]
-                self.pending_orders_B = sorted(self.pending_orders_B, key=lambda x: abs(x[1] - self.current_floor_B), reverse=False if self.direction_B < 0 else True)
-            
-            self.pending_orders_A = list(dict.fromkeys(self.pending_orders_A) )
-            self.pending_orders_B = list(dict.fromkeys(self.pending_orders_B) )
-            
-            print(f"\npending orders A: {self.pending_orders_A}\npending orders B: {self.pending_orders_B}")
-            
-            if self.pending_orders_A:
-                self.status_A=True
-                passenger_data,number_lift_A_picked, dropped_by_A = self.serve_stop("A", passenger_data=passenger_data)
-            else:
-                self.status_A=False
-                self.direction = 0
-            
-            if self.pending_orders_B:
-                self.status_B = True
-                passenger_data, number_lift_B_picked, dropped_by_B = self.serve_stop("B", passenger_data=passenger_data)
-            else:
-                self.status_B=False
-                self.direction = 0
-            '''
             #If the lifts are empty then giving the pending orders a secong chance to be reassigned                
             if self.lift_A_population==0 and self.pending_orders_A and not passenger_data:
                 for order in self.pending_orders_A:

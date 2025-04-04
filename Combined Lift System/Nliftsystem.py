@@ -789,13 +789,41 @@ class NLiftSystem:
                 unique_not_assigned.append(passenger)
         logging.info("Duplicates removed.")
         return unique_not_assigned
+    
+    def compute_dwell_time(self, num_boarding, num_alighting, door_overhead=2.0, min_time=0.5, max_time=1.5):
+        """
+        Compute the dwell time for an elevator stop.
+        
+        Parameters:
+        num_boarding (int): Number of passengers boarding.
+        num_alighting (int): Number of passengers alighting.
+        door_overhead (float): Fixed time for door opening/closing.
+        min_time (float): Minimum time for a passenger to board/alight.
+        max_time (float): Maximum time for a passenger to board/alight.
+        
+        Returns:
+        float: Total dwell time.
+        """
+        if num_boarding + num_alighting == 0:
+            return 0.0
+        # Sum time for all boarding passengers
+        boarding_time = sum(random.uniform(min_time, max_time) for _ in range(num_boarding))
+        # Sum time for all alighting passengers
+        alighting_time = sum(random.uniform(min_time, max_time) for _ in range(num_alighting))
+        # Total dwell time includes door overhead plus per-passenger times
+        total_dwell_time = door_overhead + boarding_time + alighting_time
+        print(num_boarding)
+        print(num_alighting)
+        print(total_dwell_time)
+        # input("Press Enter to continue...")
+        return total_dwell_time
 
     def run_simulation(self, passenger_data):
         """Simulate the operation of the four-lift system."""
         people_not_assigned = []
         dropped_by_lifts = {lift_name: 0 for lift_name in self.lifts}
         picked_by_lifts = {lift_name: 0 for lift_name in self.lifts}
-
+        time_spent = []
         while passenger_data or any(lift["pending_orders"] for lift in self.lifts.values()):
             logging.info(f"Running simulation at time: {self.current_time}")
             # Step 1: Update lift status
@@ -876,12 +904,20 @@ class NLiftSystem:
             
             # Step 8: Update time based on actions
             logging.info("Updating simulation time.")
-            self.current_time += (self.floor_time +sum(
-                picked_by_lifts[lift_name] + dropped_by_lifts[lift_name] 
-                for lift_name in self.lifts
-            ) * self.passenger_inout)
-            
+            # self.current_time += (self.floor_time +sum(
+            #     picked_by_lifts[lift_name] + dropped_by_lifts[lift_name] 
+            #     for lift_name in self.lifts
+            # ) * self.passenger_inout)
 
+            total_dwell_time = sum(
+            self.compute_dwell_time(picked, dropped)
+            for lift_name, (picked, dropped) in zip(picked_by_lifts.keys(), zip(picked_by_lifts.values(), dropped_by_lifts.values()))
+            )
+
+            self.current_time += (self.floor_time + total_dwell_time)
+            print("total dwell time",total_dwell_time)
+
+            
             # Step 9: Error check for lift boundaries
             logging.info("Checking for lift boundaries")
             for lift_name, lift in self.lifts.items():

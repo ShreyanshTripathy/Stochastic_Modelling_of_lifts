@@ -1,0 +1,11 @@
+Waiting Time Statistics:
+Min: 0.0
+Max: 18.0
+Mean: 2.9059322039842304
+Std: 2.965450409737957
+
+Total Service Time Statistics:
+Min: 1.0999999999995254
+Max: 26.0
+Mean: 7.354237288854445
+Std: 4.292184192245428

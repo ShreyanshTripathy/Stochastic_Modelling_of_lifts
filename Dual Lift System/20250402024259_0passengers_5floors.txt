@@ -1,0 +1,11 @@
+Waiting Time Statistics:
+Min: nan
+Max: nan
+Mean: nan
+Std: nan
+
+Total Service Time Statistics:
+Min: nan
+Max: nan
+Mean: nan
+Std: nan

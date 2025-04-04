@@ -49,12 +49,13 @@ class DataExtractingAndGraphing:
         data['Total Service Time'] = data['Order completion time'] - data['Passenger arrival time']
 
         # Ensure no negative time values
-        data['Waiting Time'] = data['Waiting Time'].clip(lower=0)
-        data['Total Service Time'] = data['Total Service Time'].clip(lower=0)
+        # data['Waiting Time'] = data['Waiting Time'].clip(lower=0)
+        # data['Total Service Time'] = data['Total Service Time'].clip(lower=0)
 
         # Filter for non-negative values for plotting KDE
-        non_negative_waiting_times = data['Waiting Time'][data['Waiting Time'] >= 0]
+        # non_negative_waiting_times = data['Waiting Time'][data['Waiting Time'] >= 0]
 
+        non_negative_waiting_times = data['Waiting Time']
         # Calculate and print essential statistics
         waiting_time_stats = {
             'min': non_negative_waiting_times.min(),

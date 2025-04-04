@@ -1,24 +1,26 @@
 import random
 import numpy as np
 import pandas as pd
+'''Working Perfectly'''
 class DualLiftSystem:
 
     '''This elevator is trying to simulate the real life situation of passengers arriving at varied times'''
 
-    def __init__(self, current_floor_A,current_floor_B, num_floors,filepath, Passenger_limit, current_time = 0):
+    def __init__(self, current_floor_A,current_floor_B, num_floors,filepath, Passenger_limit,passenger_inout, floor_time,current_time = 0):
         # Initialize the elevator state and load the passenger data from a CSV file
         self.num_floors = num_floors
+        self.orders_in_opposite_direction = []
         self.already_picked = [] #list of passengers that have been picked
         self.orders_not_served = [] #these are the orders that were not done because there was some order to be completed right above it or below depending on the direction
         self.filepath = filepath
-        # self.df_read = pd.read_csv(filepath)
+        self.df_read = pd.read_csv(filepath)
         self.current_time = current_time
         self.orders_done = [] #list of passengers whose order is completed
         self.passenger_limit = Passenger_limit
         
         #adding variation in time
-        self.floor_time = 1
-        self.passenger_inout = 3
+        self.floor_time = floor_time
+        self.passenger_inout = passenger_inout
         
         #Lift A
         self.current_floor_A = current_floor_A
@@ -65,7 +67,7 @@ class DualLiftSystem:
             
             print(f"Lift position B: {self.current_floor_B}")
 
-    def data_sorter(self, passenger_data, lift_postion):
+    def data_sorter(self, passenger_data, lift_position):
         '''
         Function to sort passenger data based on their arrival time and the distance
         from the current lift position.
@@ -86,7 +88,7 @@ class DualLiftSystem:
         # Iterate over the groups in the dictionary
         for group in grouped_by_index_3.values():
             # Sort each group based on the absolute difference between the second index value (index 1) and the given position
-            sorted_group = sorted(group, key=lambda x: abs(x[1] - lift_postion))
+            sorted_group = sorted(group, key=lambda x: abs(x[1] - lift_position))
             # Extend the sorted_data list with the sorted group
             sorted_data.extend(sorted_group)
 
@@ -96,8 +98,10 @@ class DualLiftSystem:
         '''This function picks and drops the passenger based on the pending order list'''
         if lift_name=="A":
             copy_list = self.pending_orders_A.copy()
+            current_floor = self.current_floor_A
         else:
             copy_list = self.pending_orders_B.copy()
+            current_floor = self.current_floor_B
         eligible_orders = []
         dropped = 0
         for order in copy_list:
@@ -106,10 +110,10 @@ class DualLiftSystem:
 
             dropped += self.drop_passenger(order,lift_name)
             
+            if order[1] == current_floor:
+                dont_pick = self.check_direction_conflict(order, copy_list, direction,lift_name)
 
-            dont_pick = self.check_direction_conflict(order, copy_list, direction,lift_name)
-
-            eligible_orders= self.Passengers_on_same_floor(order, dont_pick,eligible_orders,lift_name)
+                eligible_orders= self.Passengers_on_same_floor(order, dont_pick,eligible_orders,lift_name)
         
         passenger_data, number_picked = self.pick_passenger(eligible_orders,lift_name, passenger_data)
         
@@ -126,7 +130,7 @@ class DualLiftSystem:
 
         try:
             if current_floor == passenger_destination and (order in self.already_picked):
-
+                self.already_picked.remove(order)
                 # Remove order from pending orders based on the lift name
                 if lift_name == "A":
                     self.pending_orders_A.remove(order)
@@ -156,6 +160,22 @@ class DualLiftSystem:
                 else:
                     self.passengers_in_lift_B.remove(order)
                     self.lift_B_population -= 1
+                
+                # Update the DataFrame
+                self.df_read.loc[self.df_read["Index"] == Index, "Order completion time"] = self.current_time
+
+                # Extract the updated tuple
+                updated_tuple = self.df_read.loc[self.df_read["Index"] == Index].iloc[0]
+                
+                updated_tuple = tuple(updated_tuple)
+                
+                self.orders_done.append(updated_tuple)
+                
+                print(f"update_line: {updated_tuple}")
+                
+                # Reload the DataFrame to reflect the changes
+                
+                self.df_read = pd.read_csv(self.filepath)
             
                 return 1
         except IndexError:
@@ -220,15 +240,17 @@ class DualLiftSystem:
             once = False
             available_space = self.passenger_limit - lift_population
             Orders_tobe_picked = []
-            Orders_not_picked = []
             
             if len(eligible_orders) > available_space:
                 # Pick only the number of passengers that can be accommodated
                 Orders_tobe_picked = random.sample(eligible_orders, available_space)
                 for orders in eligible_orders:
                     if orders not in Orders_tobe_picked:#do something about the ordersnot picked
-                        Orders_not_picked.append(orders)
-                
+                        passenger_data.append(orders)
+                        if lift_name=="A":
+                            self.pending_orders_A.remove(orders)
+                        if lift_name=="B":
+                            self.pending_orders_B.remove(orders)  
             else:
                 Orders_tobe_picked = eligible_orders[:]
 
@@ -257,6 +279,10 @@ class DualLiftSystem:
                     self.passengers_in_lift_B.append(order)
                     self.lift_B_population += 1
 
+                # Update the DataFrame with the new value
+                self.df_read.loc[self.df_read["Index"] == Index, "Lift arrival time"] = self.current_time
+                # Reload the DataFrame to reflect the changes
+                self.df_read.to_csv(self.filepath, index=False)  # Ensure you save the changes to the file
 
                 self.already_picked.append(order)
                 if not once:
@@ -292,7 +318,156 @@ class DualLiftSystem:
                             print("passenger not picked", passenger)
 
         return passenger_data, number_people_picked                
+    
+    def queue_maker(self, pending_orders, passenger_data, lift_name):
+        going_up_to_come_down = False
+        going_down_to_come_up = False
+        
+        if lift_name == "A":
+            current_floor = self.current_floor_A
+            lift_direction = self.direction_A
+            started = self.status_A
+        else:
+            current_floor = self.current_floor_B
+            lift_direction = self.direction_B
+            started = self.status_B
+        
+        if pending_orders:
+            for order in pending_orders:
+                passenger_data.remove(order)
+                '''the following helps to assign direction to the lift'''
+                if order[1] > current_floor and not started:
+                    lift_direction = 1
+                    if lift_name=="A" and order not in self.pending_orders_A:
+                        self.pending_orders_A.append(order)
+                         
+                    elif lift_name=="B" and order not in self.pending_orders_B:
+                            self.pending_orders_B.append(order)
+                             
+                            
+                elif order[1] < current_floor and not started:
+                    lift_direction = -1
+                    if lift_name=="A" and order not in self.pending_orders_A:
+                        self.pending_orders_A.append(order)
+                         
+                    elif lift_name=="B" and order not in self.pending_orders_B:
+                            self.pending_orders_B.append(order)
+                             
+                elif order[1] == current_floor and not started:
+                    lift_direction = order[-1]
+                    if lift_name=="A" and order not in self.pending_orders_A:
+                        self.pending_orders_A.append(order)
+                         
+                    elif lift_name=="B" and order not in self.pending_orders_B:
+                            self.pending_orders_B.append(order)
+                             
+                #checking if the person is calling the lift up to come down or calling it down to go up
+
+                elif order[1] > current_floor and order[-1] < 0 and lift_direction == 1:
+                    for j in pending_orders:
+                        if j[-1] == -1 and j[1] > current_floor:
+                        
+                            if lift_name=="A":
+                                if j not in self.pending_orders_A:
+                                    self.pending_orders_A.append(j)
+                                     
+                            elif lift_name == "B" and j not in self.pending_orders_B:
+                                    self.pending_orders_B.append(j)
+                                     
+                                
+                                
+                        elif j[-1] == 1 and j[1] == current_floor:
+                            
+                            if lift_name=="A":
+                                if j not in self.pending_orders_A:
+                                    self.pending_orders_A.append(j)
+                                     
+                            elif lift_name=="B" and j not in self.pending_orders_B:
+                                    self.pending_orders_B.append(j)
+                                     
+
+                    going_up_to_come_down = True
+                    
+                elif order[1] < current_floor and order[-1] > 0 and lift_direction == -1:
+                    for j in pending_orders:
+                        if j[-1] == 1 and j[1] < current_floor:
+                            if lift_name=="A":
+                                if j not in self.pending_orders_A:
+                                    self.pending_orders_A.append(j)
+                                     
+                            elif lift_name=="B" and j not in self.pending_orders_B:
+                                    self.pending_orders_B.append(j)
+                                     
+                        elif j[-1] == 1 and j[1] == current_floor:
+                            if lift_name=="A":
+                                if j not in self.pending_orders_A:
+                                    self.pending_orders_A.append(j)
+                                     
+                            elif lift_name=="B" and j not in self.pending_orders_B:
+                                    self.pending_orders_B.append(j)
+                                     
+                    going_down_to_come_up = True
+                    
+                #All the pickup orders are over and the lift is moving up to drop someone but on the way some one wants to go down....so the lift goes up and comes down
+                elif order[1] < current_floor and lift_direction > 0 and order[-1] < 0 and going_up_to_come_down:
+                    if lift_name=="A" and order not in self.pending_orders_A:
+                        self.pending_orders_A.append(order)
+                         
+                    elif lift_name=="B" and order not in self.pending_orders_B:
+                            self.pending_orders_B.append(order)
+                             
+
+                elif order[1] > current_floor and lift_direction < 0 and order[-1] > 0 and going_down_to_come_up:
+                    
+                    if lift_name=="A" and order not in self.pending_orders_A:
+                        self.pending_orders_A.append(order)
+                         
+                    elif lift_name=="B" and order not in self.pending_orders_B:
+                            self.pending_orders_B.append(order)
+                             
+                            
+                elif order[1] > current_floor and started and lift_direction==1:
+                    if lift_name=="A" and order not in self.pending_orders_A:
+                        self.pending_orders_A.append(order)
+                         
+                    elif lift_name=="B" and order not in self.pending_orders_B:
+                            self.pending_orders_B.append(order)
+                             
+                            
+                elif order[1] < current_floor and started and lift_direction==-1:
+                    if lift_name=="A" and order not in self.pending_orders_A:
+                        self.pending_orders_A.append(order)
+                        
+                    elif lift_name=="B" and order not in self.pending_orders_B:
+                            self.pending_orders_B.append(order)
+        
+                elif order[1] == current_floor and started and lift_direction==order[-1]:
+                    if lift_name=="A" and order not in self.pending_orders_A:
+                        self.pending_orders_A.append(order)
+                    elif lift_name=="B" and order not in self.pending_orders_B:
+                            self.pending_orders_B.append(order)
+
+                started = True
+
+            going_up_to_come_down = False
+            going_down_to_come_up = False
+            
+        for order in (self.pending_orders_A if lift_name=="A" else self.pending_orders_B):
+            if order in passenger_data:
+                passenger_data.remove(order)
+            if order in pending_orders:
+                pending_orders.remove(order)
                 
+        if lift_name=="A":
+            self.direction_A=lift_direction
+            self.status_A = started
+        else:
+            self.direction_B=lift_direction
+            self.status_B = started
+                            
+        return passenger_data, pending_orders
+        
+    
     def assign_passengers(self, pending_orders):
         liftA_orders = []
         liftB_orders = []
@@ -300,15 +475,15 @@ class DualLiftSystem:
         prospective_people_in_liftB = 0
         
         for passenger in pending_orders:
-            _, passenger_position, _, _, _, _, direction = passenger
-            total_list = liftA_orders + liftB_orders + self.pending_orders_B + self.pending_orders_A          
+            Index, passenger_position, passenger_destination, Passenger_arrival_time, Lift_arrival_time, Order_completion_time, direction = passenger
+                      
             distance_from_A = abs(self.current_floor_A - passenger_position)
             distance_from_B = abs(self.current_floor_B - passenger_position)
             
                         
             if distance_from_A<distance_from_B:
                 if not self.status_A and (direction==self.direction_A or self.direction_A==0) and prospective_people_in_liftA==0:
-                    if passenger not in (total_list):# making sure that the passenger has never entered the lift
+                    if passenger not in (liftA_orders + liftB_orders + self.pending_orders_B + self.pending_orders_A):# making sure that the passenger has never entered the lift
                         
             
                         liftA_orders.append(passenger)
@@ -325,13 +500,11 @@ class DualLiftSystem:
                         
                         
                         continue
-                elif (self.direction_A>0 and direction>0 and passenger_position>=self.current_floor_A) or (self.direction_A<0 and direction<0 and passenger_position<=self.current_floor_A) and (passenger not in (total_list)):
-                    liftA_orders.append(passenger)
-                    print(f"\n{passenger} appended to lift A")
-                    prospective_people_in_liftA=1
-                    continue
-                    
-     
+                else:
+                    if ((self.direction_A>0 and direction>0 and passenger_position>self.current_floor_A) or (self.direction_A<0 and direction<0 and passenger_position<=self.current_floor_A)) and (passenger not in (liftA_orders + liftB_orders + self.pending_orders_B + self.pending_orders_A)):
+                        liftA_orders.append(passenger)
+                        print(f"\n {passenger} appended to lift A")
+                        prospective_people_in_liftA=1
             
             elif distance_from_B<distance_from_A:
                 if not self.status_B  and (direction==self.direction_B or self.direction_B==0) and prospective_people_in_liftB==0:
@@ -347,27 +520,25 @@ class DualLiftSystem:
                             elif passenger_position==self.current_floor_B:
                                 self.direction_B = direction
                         prospective_people_in_liftB = 1
-                        continue
-                # else:
-                if ((self.direction_B>0 and direction>0 and passenger_position>self.current_floor_B) or (self.direction_B<0 and direction<0 and passenger_position<=self.current_floor_B)) and (passenger not in (liftA_orders + liftB_orders + self.pending_orders_B + self.pending_orders_A)):
-                    liftB_orders.append(passenger)
-                    print(f"\n {passenger} appended to lift B")
-                    prospective_people_in_liftB=1
-                    continue
-
+                else:
+                    if ((self.direction_B>0 and direction>0 and passenger_position>self.current_floor_B) or (self.direction_B<0 and direction<0 and passenger_position<=self.current_floor_B)) and (passenger not in (liftA_orders + liftB_orders + self.pending_orders_B + self.pending_orders_A)):
+                        liftB_orders.append(passenger)
+                        print(f"\n {passenger} appended to lift B")
+                        prospective_people_in_liftB=1
             
+
             elif distance_from_A == distance_from_B:
                 lift_name = random.choice(["A","B"])
                 if lift_name=="A":
                     if self.direction_A<=0 and direction<0 and passenger_position<=self.current_floor_A:
-                        if passenger not in (total_list):
+                        if passenger not in (liftA_orders + liftB_orders + self.pending_orders_B + self.pending_orders_A):
                             liftA_orders.append(passenger)
                             print(f"\n {passenger} appended to lift A")
                             prospective_people_in_liftA = 1
                             self.direction_A = direction
                             continue
                     if self.direction_A>=0 and direction>0 and passenger_position>=self.current_floor_A:
-                        if passenger not in (total_list):
+                        if passenger not in (liftA_orders + liftB_orders + self.pending_orders_B + self.pending_orders_A):
                             liftA_orders.append(passenger)
                             print(f"\n {passenger} appended to lift A")
                             prospective_people_in_liftA = 1
@@ -375,21 +546,21 @@ class DualLiftSystem:
                             continue
                 else:
                     if self.direction_B<=0 and direction<0 and passenger_position<=self.current_floor_B:
-                        if passenger not in (total_list):
+                        if passenger not in (liftA_orders + liftB_orders + self.pending_orders_B + self.pending_orders_A):
                             liftB_orders.append(passenger)
                             print(f"\n {passenger} appended to lift B")
                             prospective_people_in_liftB = 1
                             self.direction_B = direction
                             continue
                     if self.direction_B>=0 and direction>0 and passenger_position>=self.current_floor_B:
-                        if passenger not in (total_list):
+                        if passenger not in (liftA_orders + liftB_orders + self.pending_orders_B + self.pending_orders_A):
                             liftB_orders.append(passenger)
                             print(f"\n {passenger} appended to lift B")
                             prospective_people_in_liftB = 1
                             self.direction_B = direction
                             continue
             if self.status_B==False and prospective_people_in_liftB==0:
-                if passenger not in (total_list):
+                if passenger not in (liftA_orders + liftB_orders + self.pending_orders_B + self.pending_orders_A):
                     liftB_orders.append(passenger)
                     print(f"\n {passenger} appended to lift B")
                     if prospective_people_in_liftB==0 and not self.status_B:
@@ -402,7 +573,7 @@ class DualLiftSystem:
                     prospective_people_in_liftB = 1
                     continue
             elif self.status_A == False and prospective_people_in_liftA==0:
-                if passenger not in (total_list):
+                if passenger not in (liftA_orders + liftB_orders + self.pending_orders_B + self.pending_orders_A):
                     liftA_orders.append(passenger)
                     print(f"\n {passenger} appended to lift A")
                     if prospective_people_in_liftA==0 and not self.status_A:
@@ -447,8 +618,37 @@ class DualLiftSystem:
             if person in source_list and person not in target_list and person not in passengers_in_lift:
                     source_list.remove(person)
                     target_list.append(person)
-                    print(f"\n{person} removed from {name} to {name1}\n")
-                 
+                    print(f"{person} removed from {name} to {name1}")
+        return source_list, target_list
+    
+    def compute_dwell_time(self, num_boarding, num_alighting, door_overhead=2.0, min_time=0.5, max_time=1.5):
+        """
+        Compute the dwell time for an elevator stop.
+        
+        Parameters:
+        num_boarding (int): Number of passengers boarding.
+        num_alighting (int): Number of passengers alighting.
+        door_overhead (float): Fixed time for door opening/closing.
+        min_time (float): Minimum time for a passenger to board/alight.
+        max_time (float): Maximum time for a passenger to board/alight.
+        
+        Returns:
+        float: Total dwell time.
+        """
+        if num_boarding + num_alighting == 0:
+            return 0.0
+        # Sum time for all boarding passengers
+        boarding_time = sum(random.uniform(min_time, max_time) for _ in range(num_boarding))
+        # Sum time for all alighting passengers
+        alighting_time = sum(random.uniform(min_time, max_time) for _ in range(num_alighting))
+        # Total dwell time includes door overhead plus per-passenger times
+        total_dwell_time = door_overhead + boarding_time + alighting_time
+        print(num_boarding)
+        print(num_alighting)
+        print(total_dwell_time)
+        # input("Press Enter to continue...")
+        return total_dwell_time
+    
     def run_simulation(self, passenger_data):
         '''This simulates the lift'''       
         people_not_assigned = []
@@ -482,6 +682,7 @@ class DualLiftSystem:
             pending_orders_B = []
             pending_orders = [p for p in passenger_data if p[3] <= self.current_time]
             pending_orders = sorted(pending_orders, key=lambda x: x[3])
+            print("pending_orders",pending_orders)
             
             pending_orders_A, pending_orders_B = self.assign_passengers(pending_orders)
 
@@ -493,33 +694,20 @@ class DualLiftSystem:
             pending_orders_B = self.data_sorter(pending_orders_B, self.current_floor_B)
             
             pending_orders_B = sorted(pending_orders_B, key=lambda x: x[3])
-
-            for person in pending_orders_A:
-                if person in passenger_data:
-                    passenger_data.remove(person)
-                if person in pending_orders:
-                    pending_orders.remove(person)
-                if person not in self.pending_orders_A:
-                    self.pending_orders_A.append(person)
-
-            for person in pending_orders_B:
-                if person in passenger_data:
-                    passenger_data.remove(person)
-                if person in pending_orders:
-                    pending_orders.remove(person)
-                if person not in self.pending_orders_B:
-                    self.pending_orders_B.append(person)
+            
+            passenger_data,pending_orders= self.queue_maker(pending_orders=pending_orders_A, passenger_data=passenger_data,lift_name="A")
+            
+            passenger_data,pending_orders = self.queue_maker(pending_orders=pending_orders_B, passenger_data=passenger_data, lift_name="B")
             
             for person in passenger_data:
                 if person in pending_orders and person not in self.pending_orders_A and person not in self.pending_orders_B and person not in people_not_assigned:
                     people_not_assigned.append(person)
             
             #checking on each floor to see if there is a passenger going in the same direction as the lift even if he or she was not the closest to the lift and would be efficient
-            for person in list(self.pending_orders_B):
-                self.reassign_passenger(person, self.pending_orders_B, self.pending_orders_A, self.current_floor_A, self.direction_A)
-            for person in list(self.pending_orders_A):
-                self.reassign_passenger(person, self.pending_orders_A, self.pending_orders_B, self.current_floor_B, self.direction_B)
-
+            for person in list(self.pending_orders_B).copy():
+                self.pending_orders_B, self.pending_orders_A = self.reassign_passenger(person, self.pending_orders_B, self.pending_orders_A, self.current_floor_A, self.direction_A)
+            for person in list(self.pending_orders_A).copy():
+                self.pending_orders_A, self.pending_orders_B = self.reassign_passenger(person, self.pending_orders_A, self.pending_orders_B, self.current_floor_B, self.direction_B)
             print(f"Pending_order_B  = {self.pending_orders_B}")
             print(f"Pending_order_A  = {self.pending_orders_A}")
             
@@ -530,12 +718,29 @@ class DualLiftSystem:
 
             # Using a copy of the list to avoid modification issues during iteration
             for person in list(people_not_assigned):
-                self.reassign_passenger(person, people_not_assigned, self.pending_orders_A, self.current_floor_A, self.direction_A)
-                self.reassign_passenger(person, people_not_assigned, self.pending_orders_B, self.current_floor_B, self.direction_B)
+                people_not_assigned, self.pending_orders_A = self.reassign_passenger(person, people_not_assigned, self.pending_orders_A, self.current_floor_A, self.direction_A)
+                people_not_assigned, self.pending_orders_B = self.reassign_passenger(person, people_not_assigned, self.pending_orders_B, self.current_floor_B, self.direction_B)
                      
             
             print(f"\npending orders A: {self.pending_orders_A}\npending orders B: {self.pending_orders_B}\n")
             
+            # Remove duplicates from pending orders and passenger data           
+            if self.pending_orders_A:
+                seen = set()
+                self.pending_orders_A = [x for x in self.pending_orders_A if not (x in seen or seen.add(x))]
+                passenger_data = [x for x in passenger_data if not (x in seen or seen.add(x))]
+                self.pending_orders_A = sorted(self.pending_orders_A, key=lambda x: abs(x[1] - self.current_floor_A), reverse=False if self.direction_A < 0 else True)
+           
+            if self.pending_orders_B:
+                seen = set()
+                self.pending_orders_B = [x for x in self.pending_orders_B if not (x in seen or seen.add(x))]
+                passenger_data = [x for x in passenger_data if not (x in seen or seen.add(x))]
+                self.pending_orders_B = sorted(self.pending_orders_B, key=lambda x: abs(x[1] - self.current_floor_B), reverse=False if self.direction_B < 0 else True)
+            
+            self.pending_orders_A = list(dict.fromkeys(self.pending_orders_A) )
+            self.pending_orders_B = list(dict.fromkeys(self.pending_orders_B) )
+            
+            # Move the lift if there are still pending orders
             if self.pending_orders_A:
                 self.status_A=True
                 passenger_data, number_lift_A_picked, dropped_by_A = self.serve_stop("A", passenger_data=passenger_data)
@@ -559,11 +764,15 @@ class DualLiftSystem:
                 print("There was an error")
                 raise Exception("There is an Error")
 
-            self.current_time += self.floor_time + (number_lift_B_picked + number_lift_A_picked + dropped_by_B + dropped_by_A)*self.passenger_inout
-            print(self.current_time)
             
-
-        
+            # self.current_time += self.floor_time + (number_lift_B_picked + number_lift_A_picked + dropped_by_B + dropped_by_A)*self.passenger_inout
+            print("here")
+            dwell_time_B = self.compute_dwell_time(num_boarding=number_lift_B_picked, num_alighting=dropped_by_B)
+            dwell_time_A = self.compute_dwell_time(num_boarding=number_lift_A_picked, num_alighting=dropped_by_A)
+            self.current_time += self.floor_time + dwell_time_B + dwell_time_A
+            
+            # self.current_time += self.floor_time + (max(number_lift_B_picked, number_lift_A_picked, dropped_by_B, dropped_by_A))*self.passenger_inout
+            
             #If the lifts are empty then giving the pending orders a secong chance to be reassigned                
             if self.lift_A_population==0 and self.pending_orders_A and not passenger_data:
                 for order in self.pending_orders_A:
@@ -574,18 +783,10 @@ class DualLiftSystem:
                 for order in self.pending_orders_B:
                     self.pending_orders_B.remove(order)
                     passenger_data.append(order)
-
-time = []
-for i in range(1):
-    number_of_floors = 20
-    passenger_limit = 8
-    current_floor_A = 0
-    current_floor_B = 0
-    file_path = "Dummy"
-    Dual_lift = DualLiftSystem(num_floors=number_of_floors, Passenger_limit=passenger_limit, current_floor_A=current_floor_A, current_floor_B=current_floor_B, filepath=file_path) 
-    data = [(1, 0, 18, 0, 0, 0, 1), (2, 1, 15, 0, 0, 0, 1), (3, 2, 5, 0, 0, 0, 1), (4, 3, 11, 0, 0, 0, 1), (5, 4, 18, 0, 0, 0, 1), (6, 5, 12, 0, 0, 0, 1), (7, 6, 8, 0, 0, 0, 1), (8, 7, 12, 0, 0, 0, 1), (9, 8, 3, 0, 0, 0, -1), (10, 9, 13, 0, 0, 0, 1), (11, 10, 14, 0, 0, 0, 1), (12, 11, 13, 0, 0, 0, 1), (13, 12, 15, 0, 0, 0, 1), (14, 13, 3, 0, 0, 0, -1), (15, 14, 3, 0, 0, 0, -1), (16, 15, 4, 0, 0, 0, -1), (17, 16, 6, 0, 0, 0, -1), (18, 17, 4, 0, 0, 0, -1), (19, 18, 14, 0, 0, 0, -1), (20, 19, 8, 0, 0, 0, -1), (21, 20, 2, 0, 0, 0, -1), (22, 3, 20, 29, 0, 0, 1), (23, 5, 13, 35, 0, 0, 1), (24, 3, 7, 40, 0, 0, 1)]
-    # data = [(1, 0, 2, 0, 0, 0, 1), (21, 20, 0, 0, 0, 0, -1), (20, 19, 0, 0, 0, 0, -1), (19, 18, 9, 0, 0, 0, -1), (18, 17, 5, 0, 0, 0, -1), (17, 16, 13, 0, 0, 0, -1), (15, 14, 1, 0, 0, 0, -1), (14, 13, 0, 0, 0, 0, -1), (13, 12, 18, 0, 0, 0, 1), (12, 11, 14, 0, 0, 0, 1), (16, 15, 16, 0, 0, 0, 1), (10, 9, 2, 0, 0, 0, -1), (11, 10, 16, 0, 0, 0, 1), (3, 2, 18, 0, 0, 0, 1), (4, 3, 7, 0, 0, 0, 1), (5, 4, 5, 0, 0, 0, 1), (2, 1, 4, 0, 0, 0, 1), (7, 6, 17, 0, 0, 0, 1), (8, 7, 11, 0, 0, 0, 1), (9, 8, 5, 0, 0, 0, -1), (6, 5, 4, 0, 0, 0, -1), (22, 20, 3, 51, 0, 0, -1), (23, 18, 3, 182, 0, 0, -1), (24, 18, 0, 185, 0, 0, -1), (25, 15, 17, 246, 0, 0, 1), (26, 0, 4, 259, 0, 0, 1), (27, 7, 8, 294, 0, 0, 1), (28, 19, 10, 373, 0, 0, -1), (29, 3, 10, 382, 0, 0, 1), (30, 18, 8, 387, 0, 0, -1), (31, 17, 12, 416, 0, 0, -1), (32, 12, 1, 485, 0, 0, -1), (33, 7, 19, 535, 0, 0, 1), (34, 3, 6, 608, 0, 0, 1), (35, 13, 19, 609, 0, 0, 1), (36, 19, 16, 627, 0, 0, -1), (37, 15, 8, 651, 0, 0, -1), (38, 17, 4, 665, 0, 0, -1), (39, 10, 12, 697, 0, 0, 1), (40, 5, 7, 711, 0, 0, 1), (41, 9, 15, 747, 0, 0, 1), (42, 9, 0, 761, 0, 0, -1), (43, 6, 14, 784, 0, 0, 1), (44, 17, 12, 789, 0, 0, -1), (45, 15, 20, 827, 0, 0, 1), (46, 14, 16, 846, 0, 0, 1), (47, 15, 4, 860, 0, 0, -1), (48, 9, 7, 888, 0, 0, -1), (49, 8, 15, 903, 0, 0, 1), (50, 9, 17, 912, 0, 0, 1), (51, 11, 15, 968, 0, 0, 1), (52, 12, 18, 979, 0, 0, 1), (53, 12, 7, 988, 0, 0, -1), (54, 18, 13, 997, 0, 0, -1), (55, 1, 5, 1024, 0, 0, 1), (56, 13, 20, 1093, 0, 0, 1), (57, 5, 18, 1134, 0, 0, 1), (58, 7, 3, 1151, 0, 0, -1), (59, 3, 14, 1212, 0, 0, 1), (60, 10, 7, 1269, 0, 0, -1), (61, 10, 15, 1311, 0, 0, 1), (62, 6, 4, 1312, 0, 0, -1), (63, 7, 4, 1313, 0, 0, -1), (64, 15, 14, 1365, 0, 0, -1), (65, 5, 9, 1379, 0, 0, 1), (66, 6, 18, 1412, 0, 0, 1), (67, 3, 12, 1424, 0, 0, 1), (68, 9, 14, 1443, 0, 0, 1), (69, 19, 9, 1450, 0, 0, -1), (70, 7, 2, 1460, 0, 0, -1), (71, 11, 2, 1520, 0, 0, -1), (72, 20, 2, 1523, 0, 0, -1), (73, 7, 15, 1607, 0, 0, 1), (74, 19, 4, 1613, 0, 0, -1), (75, 1, 5, 1652, 0, 0, 1), (76, 12, 10, 1655, 0, 0, -1), (77, 15, 2, 1687, 0, 0, -1), (78, 17, 14, 1699, 0, 0, -1), (79, 3, 0, 1718, 0, 0, -1), (80, 0, 19, 1858, 0, 0, 1), (81, 14, 7, 1868, 0, 0, -1), (82, 9, 6, 1918, 0, 0, -1), (83, 6, 7, 1927, 0, 0, 1), (84, 16, 14, 1963, 0, 0, -1), (85, 18, 14, 2003, 0, 0, -1), (86, 20, 17, 2022, 0, 0, -1), (87, 10, 2, 2052, 0, 0, -1), (88, 3, 18, 2075, 0, 0, 1), (89, 18, 13, 2082, 0, 0, -1), (90, 10, 20, 2087, 0, 0, 1), (91, 14, 9, 2090, 0, 0, -1), (92, 6, 20, 2115, 0, 0, 1), (93, 5, 8, 2184, 0, 0, 1), (94, 15, 13, 2185, 0, 0, -1), (95, 0, 3, 2192, 0, 0, 1), (96, 4, 2, 2231, 0, 0, -1), (97, 9, 16, 2244, 0, 0, 1), (98, 10, 20, 2283, 0, 0, 1), (99, 5, 8, 2375, 0, 0, 1), (100, 12, 0, 2443, 0, 0, -1), (101, 5, 15, 2461, 0, 0, 1), (102, 11, 10, 2486, 0, 0, -1), (103, 8, 7, 2493, 0, 0, -1), (104, 20, 0, 2509, 0, 0, -1), (105, 2, 10, 2518, 0, 0, 1), (106, 20, 14, 2591, 0, 0, -1), (107, 5, 15, 2614, 0, 0, 1), (108, 18, 17, 2676, 0, 0, -1), (109, 10, 5, 2720, 0, 0, -1), (110, 11, 7, 2761, 0, 0, -1), (111, 2, 9, 2845, 0, 0, 1), (112, 17, 10, 2863, 0, 0, -1), (113, 6, 1, 2882, 0, 0, -1), (114, 12, 11, 2897, 0, 0, -1), (115, 8, 18, 2905, 0, 0, 1), (116, 9, 11, 2922, 0, 0, 1), (117, 0, 1, 2994, 0, 0, 1), (118, 11, 2, 3003, 0, 0, -1), (119, 9, 3, 3096, 0, 0, -1), (120, 5, 12, 3114, 0, 0, 1), (121, 2, 13, 3126, 0, 0, 1), (122, 1, 12, 3168, 0, 0, 1), (123, 19, 6, 3175, 0, 0, -1), (124, 0, 10, 3210, 0, 0, 1), (125, 14, 3, 3338, 0, 0, -1), (126, 14, 9, 3369, 0, 0, -1), (127, 17, 8, 3518, 0, 0, -1), (128, 2, 7, 3556, 0, 0, 1), (129, 12, 0, 3597, 0, 0, -1)]
-    Dual_lift.run_simulation(data)
-    time.append(Dual_lift.current_time)
-# print(np.max(time))
-print(time)
+                    
+            print(dropped_by_A, dropped_by_B, number_lift_B_picked, number_lift_A_picked)
+            '''
+            self.current_time += (number_lift_B_picked + number_lift_A_picked + dropped_by_B + dropped_by_A)*self.passenger_inout
+            print(self.current_time)
+            # input("continue")
+            '''

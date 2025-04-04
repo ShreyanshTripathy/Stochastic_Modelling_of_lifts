@@ -67,7 +67,7 @@ class DualLiftSystem:
             
             print(f"Lift position B: {self.current_floor_B}")
 
-    def data_sorter(self, passenger_data, lift_postion):
+    def data_sorter(self, passenger_data, lift_position):
         '''
         Function to sort passenger data based on their arrival time and the distance
         from the current lift position.
@@ -88,7 +88,7 @@ class DualLiftSystem:
         # Iterate over the groups in the dictionary
         for group in grouped_by_index_3.values():
             # Sort each group based on the absolute difference between the second index value (index 1) and the given position
-            sorted_group = sorted(group, key=lambda x: abs(x[1] - lift_postion))
+            sorted_group = sorted(group, key=lambda x: abs(x[1] - lift_position))
             # Extend the sorted_data list with the sorted group
             sorted_data.extend(sorted_group)
 
@@ -177,8 +177,6 @@ class DualLiftSystem:
                 
                 self.df_read = pd.read_csv(self.filepath)
             
-                
-
                 return 1
         except IndexError:
             pass
@@ -622,7 +620,35 @@ class DualLiftSystem:
                     target_list.append(person)
                     print(f"{person} removed from {name} to {name1}")
         return source_list, target_list
-                  
+    
+    def compute_dwell_time(self, num_boarding, num_alighting, door_overhead=2.0, min_time=0.1, max_time=0.5):
+        """
+        Compute the dwell time for an elevator stop.
+        
+        Parameters:
+        num_boarding (int): Number of passengers boarding.
+        num_alighting (int): Number of passengers alighting.
+        door_overhead (float): Fixed time for door opening/closing.
+        min_time (float): Minimum time for a passenger to board/alight.
+        max_time (float): Maximum time for a passenger to board/alight.
+        
+        Returns:
+        float: Total dwell time.
+        """
+        if num_boarding + num_alighting == 0:
+            return 0.0
+        # Sum time for all boarding passengers
+        boarding_time = sum(random.uniform(min_time, max_time) for _ in range(num_boarding))
+        # Sum time for all alighting passengers
+        alighting_time = sum(random.uniform(min_time, max_time) for _ in range(num_alighting))
+        # Total dwell time includes door overhead plus per-passenger times
+        total_dwell_time = door_overhead + boarding_time + alighting_time
+        print(num_boarding)
+        print(num_alighting)
+        print(total_dwell_time)
+        # input("Press Enter to continue...")
+        return total_dwell_time
+    
     def run_simulation(self, passenger_data):
         '''This simulates the lift'''       
         people_not_assigned = []
@@ -715,9 +741,6 @@ class DualLiftSystem:
             self.pending_orders_B = list(dict.fromkeys(self.pending_orders_B) )
             
             # Move the lift if there are still pending orders
-            lift_A_position = self.current_floor_A
-            lift_B_position = self.current_floor_B
-            
             if self.pending_orders_A:
                 self.status_A=True
                 passenger_data, number_lift_A_picked, dropped_by_A = self.serve_stop("A", passenger_data=passenger_data)
@@ -741,7 +764,14 @@ class DualLiftSystem:
                 print("There was an error")
                 raise Exception("There is an Error")
 
-            self.current_time += self.floor_time + (number_lift_B_picked + number_lift_A_picked + dropped_by_B + dropped_by_A)*self.passenger_inout
+            
+            # self.current_time += self.floor_time + (number_lift_B_picked + number_lift_A_picked + dropped_by_B + dropped_by_A)*self.passenger_inout
+
+            dwell_time_B = self.compute_dwell_time(num_boarding=number_lift_B_picked, num_alighting=dropped_by_B)
+            dwell_time_A = self.compute_dwell_time(num_boarding=number_lift_A_picked, num_alighting=dropped_by_A)
+            self.current_time += self.floor_time + dwell_time_B + dwell_time_A
+            
+            # self.current_time += self.floor_time + (max(number_lift_B_picked, number_lift_A_picked, dropped_by_B, dropped_by_A))*self.passenger_inout
             
             #If the lifts are empty then giving the pending orders a secong chance to be reassigned                
             if self.lift_A_population==0 and self.pending_orders_A and not passenger_data:
@@ -753,8 +783,6 @@ class DualLiftSystem:
                 for order in self.pending_orders_B:
                     self.pending_orders_B.remove(order)
                     passenger_data.append(order)
-            '''
-            self.current_time += (number_lift_B_picked + number_lift_A_picked + dropped_by_B + dropped_by_A)*self.passenger_inout
-            print(self.current_time)
-            # input("continue")
-            '''
+                    
+            print(dropped_by_A, dropped_by_B, number_lift_B_picked, number_lift_A_picked)
+

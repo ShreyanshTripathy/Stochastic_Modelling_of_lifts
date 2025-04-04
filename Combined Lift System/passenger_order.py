@@ -102,22 +102,22 @@ def verify_poisson_process(file_path, lambda_passenger_per_floor):
     df = pd.read_csv(file_path)
     for floor in range(len(lambda_passenger_per_floor)):
         analyze_inter_arrival_times(df, floor)
-        plot_inter_arrival_times(df, floor, lambda_passenger_per_floor[floor])
+        # plot_inter_arrival_times(df, floor, lambda_passenger_per_floor[floor])
 
 # # Example usage
-file_path = "refined_passenger_data.csv"
-num_floors = 5
-lambda_passenger_per_floor = [0.5] * (num_floors+1)  # Example input lambda values for each floor
+# file_path = "refined_passenger_data.csv"
+# num_floors = 40
+# lambda_passenger_per_floor = [0.02] * (num_floors+1)  # Example input lambda values for each floor
 
-# Generate passenger data
-generator = PassengerDataGenerator(
-    number_of_floors=num_floors,
-    file_path=file_path,
-    current_time=0,
-    lambda_passenger_per_floor=lambda_passenger_per_floor
-)
-generator.generate_passenger_data(duration=3600)  # Generate data for 10 hours
-generator.save_data()
+# # Generate passenger data
+# generator = PassengerDataGenerator(
+#     number_of_floors=num_floors,
+#     file_path=file_path,
+#     current_time=0,
+#     lambda_passenger_per_floor=lambda_passenger_per_floor
+# )
+# generator.generate_passenger_data(duration=3600)  # Generate data for 10 hours
+# generator.save_data()
 
-# Verify the generated dataa
-verify_poisson_process(file_path, lambda_passenger_per_floor)
+# # Verify the generated dataa
+# verify_poisson_process(file_path, lambda_passenger_per_floor)
