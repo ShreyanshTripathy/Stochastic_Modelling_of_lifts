@@ -179,6 +179,7 @@ class VIPDualSystem:
                     self.lift_B_population -= 1
                 
                 # Update the DataFrame
+                self.df_read["Order completion time"] = self.df_read["Order completion time"].astype(float)
                 self.df_read.loc[self.df_read["Index"] == Index, "Order completion time"] = self.current_time
 
                 # Extract the updated tuple
@@ -308,11 +309,13 @@ class VIPDualSystem:
                     self.lift_B_population += 1
 
                 # Update the DataFrame with the new value
+                self.df_read["Lift arrival time"] = self.df_read["Lift arrival time"].astype(float)
                 self.df_read.loc[self.df_read["Index"] == Index, "Lift arrival time"] = self.current_time
                 # Reload the DataFrame to reflect the changes
                 self.df_read.to_csv(self.filepath, index=False)  # Ensure you save the changes to the file
 
                 self.already_picked.append(order)
+                
                 self.floor_passenger_count[passenger_position] -= 1
                 if not once:
                     if lift_name=="A":
@@ -397,6 +400,47 @@ class VIPDualSystem:
         # self.floor_passenger_count = [0] * (self.num_floors + 1)
         return densities
 
+    def compute_dwell_time( self,num_boarding,num_alighting,door_overhead=2.0,min_time=0.8,max_time=2,max_parallel=2):
+        """
+        Compute the dwell time for an elevator stop with batched parallel boarding and alighting.
+
+        Parameters:
+        num_boarding (int): Number of passengers boarding.
+        num_alighting (int): Number of passengers alighting.
+        door_overhead (float): Fixed time for door opening/closing.
+        min_time (float): Minimum time per passenger to board/alight.
+        max_time (float): Maximum time per passenger to board/alight.
+        max_parallel (int): Max number of passengers that can board or alight simultaneously.
+
+        Returns:
+        float: Total dwell time.
+        """
+        if num_boarding + num_alighting == 0:
+            return 0.0
+
+        # Random time per passenger
+        boarding_times = [random.uniform(min_time, max_time) for _ in range(num_boarding)]
+        alighting_times = [random.uniform(min_time, max_time) for _ in range(num_alighting)]
+
+        # Process in batches, each of size up to `max_parallel`
+        def process_in_batches(times, max_parallel):
+            total = 0.0
+            for i in range(0, len(times), max_parallel):
+                batch = times[i:i + max_parallel]
+                batch_time = max(batch)  # batch completes when the slowest person in it finishes
+                total += batch_time
+            return total
+
+        # Time taken separately for boarding and alighting (batched)
+        boarding_total = process_in_batches(boarding_times, max_parallel)
+        alighting_total = process_in_batches(alighting_times, max_parallel)
+
+        # They happen in parallel, so total time is max of the two + overhead
+        combined_passenger_time = max(boarding_total, alighting_total)
+        total_dwell_time = door_overhead + combined_passenger_time
+
+        return total_dwell_time
+
     def run_simulation(self, passenger_data):
         '''This simulates the lift'''
         passenger_data = sorted(passenger_data, key=lambda x: x[3])
@@ -448,7 +492,7 @@ class VIPDualSystem:
                 if pending_orders:
                     self.assign_passengers(pending_orders)
 
-                # Print the current state of pending_orders_A
+                # print the current state of pending_orders_A
                 print(f"pending_orders_A: {pending_orders_A}")
 
                 # Ensure that the same pending_orders_A is passed to data_sorter
@@ -512,8 +556,13 @@ class VIPDualSystem:
                 print("There was an error")
                 raise Exception("There is an Error")
 
-            self.current_time += self.floor_time + (number_lift_B_picked + number_lift_A_picked + dropped_by_B + dropped_by_A)*self.passenger_inout
-            self.time_elapsed += self.floor_time + (number_lift_B_picked + number_lift_A_picked + dropped_by_B + dropped_by_A)*self.passenger_inout
+            # self.current_time += self.floor_time + (number_lift_B_picked + number_lift_A_picked + dropped_by_B + dropped_by_A)*self.passenger_inout
+            # self.time_elapsed += self.floor_time + (number_lift_B_picked + number_lift_A_picked + dropped_by_B + dropped_by_A)*self.passenger_inout
+
+            dwell_time_B = self.compute_dwell_time(num_boarding=number_lift_B_picked, num_alighting=dropped_by_B)
+            dwell_time_A = self.compute_dwell_time(num_boarding=number_lift_A_picked, num_alighting=dropped_by_A)
+            self.current_time += self.floor_time + dwell_time_B + dwell_time_A
+            self.time_elapsed += self.floor_time + dwell_time_B + dwell_time_A
                     
             print(f"Pending_order_B  = {self.pending_orders_B}")
             print(f"Pending_order_A  = {self.pending_orders_A}")
@@ -525,7 +574,7 @@ class VIPDualSystem:
             if max(self.current_density)<=self.threshold_density_low:
                 self.picking = False
                 # sys.exit()
-                self.time_below_threshold += self.floor_time + (number_lift_B_picked + number_lift_A_picked + dropped_by_B + dropped_by_A)*self.passenger_inout
+                self.time_below_threshold += self.floor_time + dwell_time_B + dwell_time_A
                 if self.time_below_threshold>=self.t_persistence and self.lift_A_population==0 and self.lift_B_population==0:
                     returning = True
                     self.time_below_threshold = 0

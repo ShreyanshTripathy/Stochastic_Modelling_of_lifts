@@ -31,16 +31,16 @@ class DualOscillation:
         
         # Calculate the time taken to move between floors
         self.floor_time = float(self.floor_height / self.lift_speed)
-        # print(self.floor_time)
+        # #print(self.floor_time)
         self.floor_time = floor_time
         self.df = pd.read_csv(filepath)
         
     
     def move(self):
         self.current_floor_lift_A += self.direction_A
-        print(f"Lift A is on floor {self.current_floor_lift_A}")
+        #print(f"Lift A is on floor {self.current_floor_lift_A}")
         self.current_floor_lift_B += self.direction_B
-        print(f"Lift B is on floor {self.current_floor_lift_B}")
+        #print(f"Lift B is on floor {self.current_floor_lift_B}")
         
     def direction_decider(self):
         if self.current_floor_lift_A == self.lowest_floor:
@@ -62,7 +62,7 @@ class DualOscillation:
             
             # Check for Lift A
             if (self.current_floor_lift_A == Passenger_destination and order in self.already_picked_A):
-                print(f"Lift A is on floor {self.current_floor_lift_A} and dropped passenger {Index} at time {self.current_time}")
+                #print(f"Lift A is on floor {self.current_floor_lift_A} and dropped passenger {Index} at time {self.current_time}")
                 self.pending_orders.remove(order)
                 self.already_picked_A.remove(order)
                 # time.sleep(1)
@@ -71,14 +71,15 @@ class DualOscillation:
                 updated_tuple = tuple(updated_tuple)
                 self.orders_done.append(updated_tuple)
                 self.lift_A_Population-=1
+                self.df.to_csv(self.filepath, index=False)
 
 
             if (self.current_floor_lift_A == Passenger_position and order not in already_picked and self.direction_A == direction):
                 if self.lift_A_Population<self.Passenger_limit:
-                    print(f"Lift A is on floor {self.current_floor_lift_A} to pick passenger {Index} at time {self.current_time}")
+                    #print(f"Lift A is on floor {self.current_floor_lift_A} to pick passenger {Index} at time {self.current_time}")
                     # time.sleep(1)
                     self.df.loc[self.df["Index"] == Index, "Lift arrival time"] = self.current_time
-                    # print(self.df)
+                    # #print(self.df)
                     # time.sleep(1)
                     self.already_picked_A.append(order)
                     self.lift_A_Population+=1
@@ -89,7 +90,7 @@ class DualOscillation:
                 
             # Check for Lift B
             if (self.current_floor_lift_B == Passenger_destination and order in self.already_picked_B):
-                print(f"Lift B is on floor {self.current_floor_lift_B} and dropped passenger {Index} at time {self.current_time}")
+                #print(f"Lift B is on floor {self.current_floor_lift_B} and dropped passenger {Index} at time {self.current_time}")
                 self.pending_orders.remove(order)
                 self.already_picked_B.remove(order)
                 self.lift_B_Population-=1
@@ -103,10 +104,10 @@ class DualOscillation:
 
             if (self.current_floor_lift_B == Passenger_position and order not in already_picked and self.direction_B == direction):
                 if self.lift_B_Population<self.Passenger_limit:
-                    print(f"Lift B is on floor {self.current_floor_lift_B} to pick passenger {Index} at time {self.current_time}")
+                    #print(f"Lift B is on floor {self.current_floor_lift_B} to pick passenger {Index} at time {self.current_time}")
                     # time.sleep(1)
                     self.df.loc[self.df["Index"] == Index, "Lift arrival time"] = self.current_time
-                    # print(self.df)
+                    # #print(self.df)
                     # time.sleep(1)
                     self.already_picked_B.append(order)
                     self.lift_B_Population+=1
@@ -125,8 +126,8 @@ class DualOscillation:
                     self.pending_orders.append(p)
                     passenger_data.remove(p)
             
-            print(f"Current Time: {self.current_time}")
-            # print(f"Pending Orders: {self.pending_orders}")
+            #print(f"Current Time: {self.current_time}")
+            # #print(f"Pending Orders: {self.pending_orders}")
             
             if self.pending_orders:
                 passenger_data = self.serve_floor(passenger_data)
@@ -138,4 +139,4 @@ class DualOscillation:
             if (self.current_floor_lift_A > self.num_floors or self.current_floor_lift_A < self.lowest_floor or 
                 self.current_floor_lift_B > self.num_floors or self.current_floor_lift_B < self.lowest_floor):
                 break           
-        print("Simulation complete")
+        #print("Simulation complete")

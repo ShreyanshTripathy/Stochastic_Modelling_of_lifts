@@ -84,12 +84,12 @@ class NLiftSystem:
             lift["current_floor"] += lift["direction"]
             
             logging.info(f"{lift_name} is moving to floor {lift['current_floor']}")
-            print(f"{lift_name} position: {lift['current_floor']}")
+            #print(f"{lift_name} position: {lift['current_floor']}")
         
         if lift["pending_orders"]==[]:
             lift["direction"] = 0
             logging.info(f"{lift_name} is idle at floor {lift['current_floor']}")
-            print(f"{lift_name} is idle at floor {lift['current_floor']}")       
+            #print(f"{lift_name} is idle at floor {lift['current_floor']}")       
 
     def data_sorter(self, pending_order,lift_name):
         """
@@ -154,7 +154,7 @@ class NLiftSystem:
         try:
             logging.debug(f"Dropping passenger: {order}")
             if current_floor == passenger_destination and (order in self.already_picked) and order in lift["passengers"]:
-                # print(f"going to remove {order} from {lift_name}")
+                # #print(f"going to remove {order} from {lift_name}")
                 lift["pending_orders"].remove(order)
                 
                 if order in self.orders_not_served:
@@ -169,24 +169,25 @@ class NLiftSystem:
                     "status": "Dropping"
                 }
                 
-                print(f"Dropping a Passenger:\n\n{Dropping_Passenger}\n\n")
+                #print(f"Dropping a Passenger:\n\n{Dropping_Passenger}\n\n")
                 
                 logging.debug(f"Trying to drop passenger: {order} from lift: {lift_name}")
                 
                 lift["passengers"].remove(order)
                 lift["population"]-=1
-                # print(lift["pending_orders"])
+                # #print(lift["pending_orders"])
                 
                 '''I had a doubt here which is should we update the time here or not then I remembered....the time at which the lift has come to this floor is the same for all so the time for them getting served is not the fault of the elevator but a thing of them not being able to get down quickly'''
-                
-                self.df_read.loc[self.df_read["Index"]==Index, "Order completion time"] = self.current_time
+                self.df_read["Order completion time"] = self.df_read["Order completion time"].astype(float)
+                self.df_read.loc[self.df_read["Index"] == Index, "Order completion time"] = self.current_time
+                # self.df_read.loc[self.df_read["Index"] == Index, "Order completion time"] = self.current_time
                 
                 updated_tuple = self.df_read.loc[self.df_read["Index"]==Index].iloc[0]
                 
                 updated_tuple = tuple(updated_tuple)
                 
                 self.orders_done.append(updated_tuple)
-                print(f"updated Line: {updated_tuple}")
+                #print(f"updated Line: {updated_tuple}")
                 
                 self.df_read = pd.read_csv(self.filepath)
                 
@@ -319,7 +320,7 @@ class NLiftSystem:
                     "Time": self.current_time,
                     "Status": "Picking"
                 }
-                print(f"PICKING:\n\n{picking_passenger}\n")
+                #print(f"PICKING:\n\n{picking_passenger}\n")
                 
                 # self.current_time+=self.passenger_inout
                 number_people_picked+=1
@@ -330,7 +331,9 @@ class NLiftSystem:
                 
             
                 # Update the DataFrame with the new value
+                self.df_read["Lift arrival time"] = self.df_read["Lift arrival time"].astype(float)
                 self.df_read.loc[self.df_read["Index"] == Index, "Lift arrival time"] = self.current_time
+                # self.df_read.loc[self.df_read["Index"] == Index, "Lift arrival time"] = self.current_time
                 # Reload the DataFrame to reflect the changes
                 self.df_read.to_csv(self.filepath, index=False)  # Ensure you save the changes to the file
 
@@ -350,7 +353,7 @@ class NLiftSystem:
                         if passenger not in lift["passengers"]:
                             lift["pending_orders"].remove(passenger)
                             passenger_data.append(passenger)
-                            print("passenger not picked", passenger)
+                            #print("passenger not picked", passenger)
                             
             logging.info(f"Passengers picked for {lift_name}: {number_people_picked}")
         logging.info(f"Passenger data updated for {lift_name}")
@@ -678,7 +681,7 @@ class NLiftSystem:
                         assignments[idle_lifts[0]].append(passenger)
                     # else:
                         # Step 5: Do not assign, leave in not_assigned list
-                        # print(f"Passenger {passenger} not assigned to any lift.")
+                        # #print(f"Passenger {passenger} not assigned to any lift.")
                         
 
         return assignments
@@ -694,7 +697,7 @@ class NLiftSystem:
         """
         logging.debug("Reassigning passengers to lifts.")
         passengers_in_lifts = [p for lift in self.lifts.values() for p in lift["passengers"]]
-        print("passengers in lift",passengers_in_lifts)
+        #print("passengers in lift",passengers_in_lifts)
         
         # Identify if the source list belongs to a specific lift
         source_lift_name = None
@@ -724,7 +727,7 @@ class NLiftSystem:
                     # Add to target lift
                     target_lift_data["pending_orders"].append(person)
                     to_remove.append(person)
-                    print(f"\n{person} reassigned from {source_lift_name} to {target_lift_name}\n")
+                    #print(f"\n{person} reassigned from {source_lift_name} to {target_lift_name}\n")
                     break
                 elif source_lift_name != "Not assigned list":
                     if (
@@ -790,32 +793,45 @@ class NLiftSystem:
         logging.info("Duplicates removed.")
         return unique_not_assigned
     
-    def compute_dwell_time(self, num_boarding, num_alighting, door_overhead=2.0, min_time=0.5, max_time=1.5):
+    def compute_dwell_time( self,num_boarding,num_alighting,door_overhead=2.0,min_time=0.8,max_time=2,max_parallel=2):
         """
-        Compute the dwell time for an elevator stop.
-        
+        Compute the dwell time for an elevator stop with batched parallel boarding and alighting.
+
         Parameters:
         num_boarding (int): Number of passengers boarding.
         num_alighting (int): Number of passengers alighting.
         door_overhead (float): Fixed time for door opening/closing.
-        min_time (float): Minimum time for a passenger to board/alight.
-        max_time (float): Maximum time for a passenger to board/alight.
-        
+        min_time (float): Minimum time per passenger to board/alight.
+        max_time (float): Maximum time per passenger to board/alight.
+        max_parallel (int): Max number of passengers that can board or alight simultaneously.
+
         Returns:
         float: Total dwell time.
         """
         if num_boarding + num_alighting == 0:
             return 0.0
-        # Sum time for all boarding passengers
-        boarding_time = sum(random.uniform(min_time, max_time) for _ in range(num_boarding))
-        # Sum time for all alighting passengers
-        alighting_time = sum(random.uniform(min_time, max_time) for _ in range(num_alighting))
-        # Total dwell time includes door overhead plus per-passenger times
-        total_dwell_time = door_overhead + boarding_time + alighting_time
-        print(num_boarding)
-        print(num_alighting)
-        print(total_dwell_time)
-        # input("Press Enter to continue...")
+
+        # Random time per passenger
+        boarding_times = [random.uniform(min_time, max_time) for _ in range(num_boarding)]
+        alighting_times = [random.uniform(min_time, max_time) for _ in range(num_alighting)]
+
+        # Process in batches, each of size up to `max_parallel`
+        def process_in_batches(times, max_parallel):
+            total = 0.0
+            for i in range(0, len(times), max_parallel):
+                batch = times[i:i + max_parallel]
+                batch_time = max(batch)  # batch completes when the slowest person in it finishes
+                total += batch_time
+            return total
+
+        # Time taken separately for boarding and alighting (batched)
+        boarding_total = process_in_batches(boarding_times, max_parallel)
+        alighting_total = process_in_batches(alighting_times, max_parallel)
+
+        # They happen in parallel, so total time is max of the two + overhead
+        combined_passenger_time = max(boarding_total, alighting_total)
+        total_dwell_time = door_overhead + combined_passenger_time
+
         return total_dwell_time
 
     def run_simulation(self, passenger_data):
@@ -842,7 +858,7 @@ class NLiftSystem:
             # Step 3: Assign passengers to lifts
             logging.info("Assigning passengers to lifts.")
             lift_orders = self.assign_passengers(pending_orders)
-            # print("passenger_data",passenger_data)
+            # #print("passenger_data",passenger_data)
             
             for lift_name, orders in lift_orders.items():
                 sorted_orders = self.data_sorter(orders, lift_name)
@@ -859,7 +875,7 @@ class NLiftSystem:
                     person not in lift["pending_orders"] for lift in self.lifts.values()
                 ) and person not in people_not_assigned:
                     people_not_assigned.append(person)
-                    print("not assigned",people_not_assigned)
+                    #print("not assigned",people_not_assigned)
 
         
             
@@ -896,7 +912,7 @@ class NLiftSystem:
                     passenger_data, picked_by_lifts[lift_name], dropped_by_lifts[lift_name] = self.serve_stop(
                         lift_name, passenger_data=passenger_data
                     )
-                    print(f"{lift_name} pending order: {lift['pending_orders']}")
+                    #print(f"{lift_name} pending order: {lift['pending_orders']}")
                     self.move(lift_name)
                 else:
                     lift["status"] = False
@@ -915,17 +931,17 @@ class NLiftSystem:
             )
 
             self.current_time += (self.floor_time + total_dwell_time)
-            print("total dwell time",total_dwell_time)
+            #print("total dwell time",total_dwell_time)
 
             
             # Step 9: Error check for lift boundaries
             logging.info("Checking for lift boundaries")
             for lift_name, lift in self.lifts.items():
                 if lift["current_floor"] > self.num_floors or lift["current_floor"] < 0:
-                    print(f"Error in {lift_name}")
+                    #print(f"Error in {lift_name}")
                     raise Exception("Lift out of bounds")
             
-            print(f"Current time: {self.current_time}")
+            #print(f"Current time: {self.current_time}")
             
             for lift_name, lift in self.lifts.items():
                 if lift["population"]==0 and lift["pending_orders"] and not passenger_data:

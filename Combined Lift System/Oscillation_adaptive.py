@@ -90,14 +90,16 @@ class DualOscillation:
                     "Status": "Dropping"
                 }
 
-                print(f"DROPPING:\n\n{Dropping_Passenger}\n")
+                #print(f"DROPPING:\n\n{Dropping_Passenger}\n")
                 
                 self.pending_orders.remove(order)
                 self.already_picked_A.remove(order)
+                self.df["Order completion time"] = self.df["Order completion time"].astype(float)
                 self.df.loc[self.df["Index"] == Index, "Order completion time"] = self.current_time
                 updated_tuple = self.df.loc[self.df["Index"] == Index].iloc[0]
                 updated_tuple = tuple(updated_tuple)
                 self.orders_done.append(updated_tuple)
+                self.df.to_csv(self.filepath, index=False)
                 self.lift_A_Population-=1
 
 
@@ -112,8 +114,8 @@ class DualOscillation:
                     "Time": self.current_time,
                     "Status": "Picking"
                     }
-                    print(f"PICKING:\n\n{picking_passenger}\n")
-                    
+                    #print(f"PICKING:\n\n{picking_passenger}\n")
+                    self.df["Lift arrival time"] = self.df["Lift arrival time"].astype(float)
                     self.df.loc[self.df["Index"] == Index, "Lift arrival time"] = self.current_time
                 
                     self.already_picked_A.append(order)
@@ -128,7 +130,7 @@ class DualOscillation:
             if (self.current_floor_lift_B == Passenger_destination and order in self.already_picked_B):
                 
                 Dropping_Passenger = {
-                    "Lift ID": "Lift A",
+                    "Lift ID": "Lift B",
                     "Name": Index,
                     "Current floor": Passenger_position,
                     "Destination_floor": Passenger_destination,
@@ -141,7 +143,7 @@ class DualOscillation:
                 self.pending_orders.remove(order)
                 self.already_picked_B.remove(order)
                 self.lift_B_Population-=1
-
+                self.df["Order completion time"] = self.df["Order completion time"].astype(float)
                 self.df.loc[self.df["Index"] == Index, "Order completion time"] = self.current_time
                 updated_tuple = self.df.loc[self.df["Index"] == Index].iloc[0]
                 updated_tuple = tuple(updated_tuple)
@@ -160,7 +162,7 @@ class DualOscillation:
                     "Status": "Picking"
                     }
                     print(f"PICKING:\n\n{picking_passenger}\n")
-                    
+                    self.df["Lift arrival time"] = self.df["Lift arrival time"].astype(float)
                     self.df.loc[self.df["Index"] == Index, "Lift arrival time"] = self.current_time
 
                     self.already_picked_B.append(order)

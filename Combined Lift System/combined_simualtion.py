@@ -13,7 +13,7 @@ from Dual_system import DualLiftSystem
 from Nliftsystem import NLiftSystem
 from fourliftsystem import FourLiftSystem
 from VIPdualsystemnotadaptive import VIPDualSystemNotAdaptive
-from Dual_system_adaptive import DualLiftSystemAdaptive
+from single_file_simulation import DualLiftSystemAdaptive
 
 def read_passenger_data(file_path):
     """Helps to read the CSV file and create the passenger data list"""
@@ -96,7 +96,7 @@ def generate_and_process_data(l, file_path,duration,current_floor_A_Oscillation,
             Single_lift.run_simulation(passenger_data=data)        
             current_timestamp = Single_lift.current_time
             order_done_1.append(Single_lift.orders_done)
-            print(order_done_1)
+            #print(order_done_1)
             del Single_lift
         if system == "o":
             Metro_lift = DualOscillation(current_floor_A=current_floor_A_Oscillation,current_floor_B=current_floor_B_Oscillation,num_floors=num_floors,filepath=file_path,Passenger_limit=passenger_limit,current_time=current_timestamp,floor_time=floor_time_oscillation)
@@ -114,24 +114,15 @@ def generate_and_process_data(l, file_path,duration,current_floor_A_Oscillation,
             del Dual_lift
         
         if system == "a":
+            
             Adaptive_lift = DualLiftSystemAdaptive(
-            current_floor_A=current_floor_A,
-            current_floor_B=current_floor_B,
-            num_floors=num_floors,
-            filepath=file_path,
-            Passenger_limit=passenger_limit,
-            T_high_oscillation=T_high_oscillation,
-            T_low_oscillation=T_low_oscillation,
-            current_density=current_density,
-            delta_time=delta_time,
-            T_high_VIP=T_high_VIP,
-            T_low_VIP=T_low_VIP,
-            current_time=0,
-            floor_time = floor_time,
-            passenger_inout=passenger_inout,
-            floor_time_oscillation=floor_time_oscillation
-        )
-            Adaptive_lift.run_simulation(passenger_data=data)
+            current_floor_A, current_floor_B, num_floors, file_path,
+            passenger_limit, floor_time, delta_time,
+            T_high_oscillation=T_high_oscillation, T_low_oscillation=T_low_oscillation,
+            T_high_VIP=T_high_VIP, T_low_VIP=T_low_VIP, floor_time_oscillation=floor_time_oscillation
+            )
+        
+            Adaptive_lift.run_simulation(data)
             current_timestamp = Adaptive_lift.current_time
             order_done_4.append(Adaptive_lift.orders_done)
             del Adaptive_lift
@@ -188,27 +179,27 @@ def generate_and_process_data(l, file_path,duration,current_floor_A_Oscillation,
 def run_multiple_scenarios(system, iteration):
     # Scenarios for different traffic levels and number of floors
     traffic_levels = {
-        # "low_traffic": {
-            # 5: [0.002] + [0.002] * 5,   # Ground floor higher than others
-            # 20: [0.0015] + [0.0015] * 20,
-            # 40: [0.001] + [0.001] * 40
-        # },
-        # "moderate_traffic": {
-            # 5: [0.006] + [0.006]*5,
-            # 20: [0.0035] + [0.0035] * 20,
-            # 40: [0.003] + [0.003] * 40 #500
-        # },
+        "low_traffic": {
+            5: [0.002] + [0.002] * 5,  
+            20: [0.0015] + [0.0015] * 20,
+            40: [0.001] + [0.001] * 40
+        },
+        "moderate_traffic": {
+            5: [0.006] + [0.006]*5,
+            20: [0.0035] + [0.0035] * 20,
+            40: [0.003] + [0.003] * 40 #500
+        },
         "high_traffic": {
             5: [0.015] + [0.015]*5,
-            # 20: [0.0080] + [0.0080] * 20, # 600
-            # 40: [0.0062] + [0.0062] * 40 #1000
+            20: [0.0080] + [0.0080] * 20, # 600
+            40: [0.0062] + [0.0062] * 40 #1000
         }
     }
     
     durations = {
         5: 3600,   # 1 hour
-        20: 3600,  # 2 hours
-        40: 3600  # 4 hours
+        20: 3600,  # 1 hours
+        40: 3600  # 1 hours
         
     }
     
@@ -220,12 +211,12 @@ def run_multiple_scenarios(system, iteration):
    
     # Iterate over each traffic level
     for traffic_level, floor_configs in traffic_levels.items():
-        # time.sleep(1)
+        time.sleep(1)
         N_current_floors = []
         Quad_current_floors = []
         VIP_floor = None
         for num_floors, l in floor_configs.items():
-            # time.sleep(1)
+            time.sleep(1)
             scenario_name = f"{traffic_level}_{num_floors}"
             duration = durations[num_floors]
             passenger_limit = passenger_limits[num_floors]\
@@ -265,7 +256,7 @@ def run_multiple_scenarios(system, iteration):
                 VIP_floor = 0
             
             # T_high_oscillation = 0.8
-            # T_low_oscillation = 0.7
+            # T_low_oscillation = 0.7 
             current_density = [0]*(num_floors+1)
             delta_time = 5
             
@@ -286,7 +277,7 @@ def run_multiple_scenarios(system, iteration):
                 T_low_oscillation = 0.04
             passenger_inout = 3
             floor_time = 1
-            floor_time_oscillation = 4
+            floor_time_oscillation=4
             
             file_path = f"Graphs/{first_directory}/{second_directory}/{third_directory}/{scenario_name}passenger_data{datetime.now().strftime('%Y%m%d%H%M%S')}.csv"
 
@@ -350,22 +341,21 @@ def run_multiple_scenarios(system, iteration):
 # single lift system
 # for i in range(100):
 #     run_multiple_scenarios(system = "s", iteration=i)
-#     print(i)
 
 # dual lift system
-for i in range(100):
-    run_multiple_scenarios(system = "d", iteration=i)
-    print(i)
-time.sleep(1)
+# for i in range(100):
+#     run_multiple_scenarios(system = "d", iteration=i)
+#     print(i)
+# time.sleep(1)
 
 # # oscillation lift system
 # for i in range(100):
 #     run_multiple_scenarios(system = "o", iteration= i)
-#     time.sleep(1)
+    # time.sleep(1)
 
 
 # # adaptive lift system
-# for i in range(100):
+# for i in range(60,100):
 #     run_multiple_scenarios(system = "a", iteration=i)
 #     time.sleep(1)
 
@@ -378,7 +368,7 @@ time.sleep(1)
 #     time.sleep(1)
 
 # N lift system
-# for i in range(100):
-#     run_multiple_scenarios(system="N", iteration=i)
+for i in range(100):
+    run_multiple_scenarios(system="N", iteration=i)
 #     time.sleep(1)
 print("Simulation done")

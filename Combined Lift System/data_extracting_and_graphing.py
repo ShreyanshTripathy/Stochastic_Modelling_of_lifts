@@ -48,6 +48,7 @@ class DataExtractingAndGraphing:
         data['Travel Time'] = data['Order completion time'] - data['Lift arrival time']
         data['Total Service Time'] = data['Order completion time'] - data['Passenger arrival time']
 
+        
         # Ensure no negative time values
         # data['Waiting Time'] = data['Waiting Time'].clip(lower=0)
         # data['Total Service Time'] = data['Total Service Time'].clip(lower=0)
@@ -82,7 +83,7 @@ class DataExtractingAndGraphing:
 
         # Save statistics to a text file
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        stats_file_name = f"notepads/{timestamp}_{number_passengers}passengers_{self.number_of_floors}floors.txt"
+        stats_file_name = f"notepads/{self.floor_directory}/{self.traffic_level}/{self.system_type}/{timestamp}_{number_passengers}passengers_{self.number_of_floors}floors.txt"
         with open(stats_file_name, 'w') as f:
             # iteration
             f.write(f"iteration: {self.iteration}\n")
@@ -99,8 +100,8 @@ class DataExtractingAndGraphing:
 
         destination_path = f"Graphs/{self.floor_directory}/{self.traffic_level}/{self.system_type}/{timestamp}_{number_passengers}passengers_{self.number_of_floors}floors.txt"
 
-        # Copy the file to the new location
-        shutil.copy(stats_file_name, destination_path)
+        # # Copy the file to the new location
+        # shutil.copy(stats_file_name, destination_path)
         
         # Create unique file identifiers
         graph_directory = f"Graphs/{self.floor_directory}/{self.traffic_level}/{self.system_type}"

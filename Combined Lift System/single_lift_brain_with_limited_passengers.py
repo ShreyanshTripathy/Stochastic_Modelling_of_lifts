@@ -33,8 +33,8 @@ class Elevator_varied_passenger_arrival_time:
         elif self.current_floor==0:
             self.direction=1
         self.current_floor += self.direction
-        # print(f"The lift is on floor {self.current_floor}")
-        print(f"Lift position: {self.current_floor}")
+        # #print(f"The lift is on floor {self.current_floor}")
+        #print(f"Lift position: {self.current_floor}")
 
     def add_stop(self, passenger_data):
         '''
@@ -85,18 +85,20 @@ class Elevator_varied_passenger_arrival_time:
         '''This function picks and drops the passenger based on the pending order list'''
         copy_list = self.pending_orders.copy()
         eligible_orders = []
-
+        dropped = 0
         for order in copy_list:
             dont_pick = False
             Index, passenger_position, passenger_destination, Passenger_arrival_time, Lift_arrival_time, Order_completion_time, direction = order
 
-            self.drop_passenger(order)
+            dropped += self.drop_passenger(order)
+            
+            if passenger_position == self.current_floor:
+                dont_pick = self.check_direction_conflict(order, copy_list, direction)
 
-            dont_pick = self.check_direction_conflict(order, copy_list, direction)
-
-            eligible_orders = self.Passengers_on_same_floor(order, dont_pick,eligible_orders)
+                eligible_orders = self.Passengers_on_same_floor(order, dont_pick,eligible_orders)
         
-        self.pick_passenger(eligible_orders)
+        number_picked = self.pick_passenger(eligible_orders)
+        return number_picked, dropped
     
     def drop_passenger(self, order):
         '''Drop passengers if the current floor matches their destination'''
@@ -107,7 +109,7 @@ class Elevator_varied_passenger_arrival_time:
                 self.pending_orders.remove(order)
                 if order in self.orders_not_served:
                     self.orders_not_served.remove(order)
-                # print(f"The lift is on floor {self.current_floor} and a passenger ID {Index} is dropped at time {self.current_time}")
+                # #print(f"The lift is on floor {self.current_floor} and a passenger ID {Index} is dropped at time {self.current_time}")
                 Dropping_Passenger = {
                     "Name": Index,
                     "Current floor": passenger_position,
@@ -115,14 +117,15 @@ class Elevator_varied_passenger_arrival_time:
                     "Time": self.current_time,
                     "Status": "Dropping"
                 }
-                print(f"DROPPING:\n\n{Dropping_Passenger}\n")
+                #print(f"DROPPING:\n\n{Dropping_Passenger}\n")
                 
                 self.current_time+=self.passenger_inout
                 self.passengers_in_lift.remove(order)
                 self.lift_population-=1
     
-                time.sleep(1)
+                #time.sleep(1)
                 # Update the DataFrame
+                self.df_read["Order completion time"] = self.df_read["Order completion time"].astype(float)
                 self.df_read.loc[self.df_read["Index"] == Index, "Order completion time"] = self.current_time
 
                 # Extract the updated tuple
@@ -131,13 +134,15 @@ class Elevator_varied_passenger_arrival_time:
                 self.orders_done.append(updated_tuple)
                 # Reload the DataFrame to reflect the changes
                 self.df_read = pd.read_csv(self.filepath)
-                # time.sleep(1)
+                # #time.sleep(1)
                 for orders in self.orders_not_served:
                     if ((min(self.orders_not_served, key=lambda x: x[1])[1] <= self.current_floor and self.direction > 0) or (max(self.orders_not_served, key=lambda x: x[1])[1] >= self.current_floor and self.direction < 0)) and not ((any(tup[-1]==-1 for tup in self.passengers_in_lift) and self.direction==-1) or (any(tup[-1]==1 for tup in self.passengers_in_lift) and self.direction==1)):
                         self.direction = orders[-1]
+                return 1
 
         except IndexError:
             pass
+        return 0
 
     def check_direction_conflict(self, order, copy_list, direction):
         '''Check if there is a conflict in the direction and decide not to pick up the passenger'''
@@ -176,6 +181,7 @@ class Elevator_varied_passenger_arrival_time:
         return eligible_orders
                 
     def pick_passenger(self, eligible_orders):
+        number_picked = 0
         if eligible_orders:
             # Calculate available space in the lift
             once = False
@@ -195,7 +201,7 @@ class Elevator_varied_passenger_arrival_time:
             for order in Orders_tobe_picked:
                 Index, passenger_position, passenger_destination, Passenger_arrival_time, Lift_arrival_time, Order_completion_time, direction = order
 
-                # print(f"The Lift is on floor {self.current_floor} to pick up passenger {Index} going to floor {passenger_destination} at time {self.current_time}")
+                # #print(f"The Lift is on floor {self.current_floor} to pick up passenger {Index} going to floor {passenger_destination} at time {self.current_time}")
                 picking_passenger = {
                     "Name": Index,
                     "Current floor": passenger_position,
@@ -203,18 +209,19 @@ class Elevator_varied_passenger_arrival_time:
                     "Time": self.current_time,
                     "Status": "Picking"
                 }
-                print(f"PICKING:\n\n{picking_passenger}\n")
-                
-                self.current_time+=self.passenger_inout
+                #print(f"PICKING:\n\n{picking_passenger}\n")
+                number_picked+=1
+                # self.current_time+=random.uniform(self.min_time,self.max_time)
                 
                 self.passengers_in_lift.append(order)
                 self.lift_population += 1
-                # time.sleep(1)
+                # #time.sleep(1)
                 # Update the DataFrame with the new value
+                self.df_read["Lift arrival time"] = self.df_read["Lift arrival time"].astype(float)
                 self.df_read.loc[self.df_read["Index"] == Index, "Lift arrival time"] = self.current_time
                 # Reload the DataFrame to reflect the changes
                 self.df_read.to_csv(self.filepath, index=False)  # Ensure you save the changes to the file
-                # time.sleep(1)
+                # #time.sleep(1)
                 self.already_picked.append(order)
                 if not once:
                     self.direction = direction
@@ -222,8 +229,49 @@ class Elevator_varied_passenger_arrival_time:
                 
                 if self.current_floor == passenger_position and (((passenger_position == min(self.pending_orders, key=lambda x: x[1])[1]) and (self.direction == direction)) or ((passenger_position == max(self.pending_orders, key=lambda x: x[1])[1]) and (self.direction == direction))):
                     
-                    self.direction=direction    
+                    self.direction=direction
+        return number_picked
 
+    def compute_dwell_time( self,num_boarding,num_alighting,door_overhead=2.0,min_time=0.8,max_time=2,max_parallel=2):
+        """
+        Compute the dwell time for an elevator stop with batched parallel boarding and alighting.
+
+        Parameters:
+        num_boarding (int): Number of passengers boarding.
+        num_alighting (int): Number of passengers alighting.
+        door_overhead (float): Fixed time for door opening/closing.
+        min_time (float): Minimum time per passenger to board/alight.
+        max_time (float): Maximum time per passenger to board/alight.
+        max_parallel (int): Max number of passengers that can board or alight simultaneously.
+
+        Returns:
+        float: Total dwell time.
+        """
+        if num_boarding + num_alighting == 0:
+            return 0.0
+
+        # Random time per passenger
+        boarding_times = [random.uniform(min_time, max_time) for _ in range(num_boarding)]
+        alighting_times = [random.uniform(min_time, max_time) for _ in range(num_alighting)]
+
+        # Process in batches, each of size up to `max_parallel`
+        def process_in_batches(times, max_parallel):
+            total = 0.0
+            for i in range(0, len(times), max_parallel):
+                batch = times[i:i + max_parallel]
+                batch_time = max(batch)  # batch completes when the slowest person in it finishes
+                total += batch_time
+            return total
+
+        # Time taken separately for boarding and alighting (batched)
+        boarding_total = process_in_batches(boarding_times, max_parallel)
+        alighting_total = process_in_batches(alighting_times, max_parallel)
+
+        # They happen in parallel, so total time is max of the two + overhead
+        combined_passenger_time = max(boarding_total, alighting_total)
+        total_dwell_time = door_overhead + combined_passenger_time
+
+        return total_dwell_time
 
     def run_simulation(self, passenger_data):
         '''This simulates the lift'''
@@ -296,17 +344,19 @@ class Elevator_varied_passenger_arrival_time:
 
             # Move the lift if there are still pending orders
             if self.pending_orders:
-                self.serve_stop()
+                number_picked, dropped = self.serve_stop()
 
             if self.pending_orders:
                 self.move()
 
             # Stop simulation if lift goes out of bounds
             if self.current_floor > self.num_floors or self.current_floor < 0:
-                print("There was an error")
+                #print("There was an error")
                 raise Exception("There is an Error")
-
-            self.current_time += self.floor_time
+            #print(number_picked,dropped)
+            dwell_time = self.compute_dwell_time(num_boarding=number_picked, num_alighting=dropped)
+            
+            self.current_time += self.floor_time+dwell_time
 
             # if self.pending_orders:
             #     self.serve_stop()
@@ -318,4 +368,4 @@ class Elevator_varied_passenger_arrival_time:
                 for order in self.pending_orders:
                     self.pending_orders.remove(order)
                     passenger_data.append(order)
-            time.sleep(1)
+            #time.sleep(1)

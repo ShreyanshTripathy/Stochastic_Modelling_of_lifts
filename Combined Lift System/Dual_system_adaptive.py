@@ -71,6 +71,7 @@ class DualLiftSystemAdaptive:
         self.time_below_threshold = 0  # Tracks time below a threshold
         
         self.current_mode = "normal"  # Tracks the current mode: "normal", "oscillation", "VIP"
+        self.passenger_arrived = []
 
         
     def move(self, lift_name):
@@ -197,7 +198,11 @@ class DualLiftSystemAdaptive:
                     self.passengers_in_lift_B.remove(order)
                     self.lift_B_population -= 1
                 
+                if order in self.passenger_arrived:
+                    self.passenger_arrived.remove(order)
+                
                 # Update the DataFrame
+                self.df_read["Order completion time"] = self.df_read["Order completion time"].astype(float)
                 self.df_read.loc[self.df_read["Index"] == Index, "Order completion time"] = self.current_time
 
                 # Extract the updated tuple
@@ -314,11 +319,17 @@ class DualLiftSystemAdaptive:
                     self.lift_B_population += 1
 
                 # Update the DataFrame with the new value
+                self.df_read["Lift arrival time"] = self.df_read["Lift arrival time"].astype(float)
                 self.df_read.loc[self.df_read["Index"] == Index, "Lift arrival time"] = self.current_time
                 # Reload the DataFrame to reflect the changes
                 self.df_read.to_csv(self.filepath, index=False)  # Ensure you save the changes to the file
 
                 self.already_picked.append(order)
+    
+                if all(passenger == 0 for passenger in self.floor_passenger_count):
+                    print("No passengers on any floor:", self.floor_passenger_count)
+                    sys.exit()
+                
                 self.floor_passenger_count[passenger_position] -= 1
                 if not once:
                     if lift_name=="A":
@@ -701,6 +712,11 @@ class DualLiftSystemAdaptive:
     
     def update_densities(self):
         densities = [count / self.delta_time for count in self.floor_passenger_count]
+        for i in densities:
+            if i <0:
+                print(self.floor_passenger_count)
+                print("here dual")
+                sys.exit()
         self.density_snapshots.append({"time": self.current_time, "densities": densities})
         print(f"Density snapshot at time {self.current_time}: {densities}")
         
@@ -712,9 +728,7 @@ class DualLiftSystemAdaptive:
 
     def switch_to_oscillation(self, passenger_data):
         if (self.lift_A_population == 0 and self.lift_B_population==0) and not self.picking:
-            print(f"Pending orders A: {self.pending_orders_A}")
-            print(f"Pending orders B: {self.pending_orders_B}")
-            print(np.mean(self.current_density))
+            
             if self.pending_orders_A:
                 for person in self.pending_orders_A.copy():
                     if person not in passenger_data:
@@ -725,12 +739,11 @@ class DualLiftSystemAdaptive:
                     if person not in passenger_data:
                         passenger_data.append(person)
                     self.pending_orders_B.remove(person)
+                    
             print(f"Switching to oscillation at time {self.current_time}")
-            
             metro = DualOscillation(current_floor_A=self.current_floor_A,current_floor_B=self.current_floor_B, num_floors=self.num_floors, Passenger_limit=self.passenger_limit, delta_time=self.delta_time, threshold_density_high=self.T_high_oscillation,threshold_density_low = self.T_low_oscillation , filepath = self.filepath, current_time=self.current_time, current_density=self.current_density, floor_time = self.floor_time_oscillation)  
              
             updated_passenger_Data = metro.run_simulation(passenger_data)
-            
             if metro.already_picked_A:
                 for people in metro.already_picked_A:
                     if people not in self.pending_orders_A:
@@ -754,7 +767,8 @@ class DualLiftSystemAdaptive:
                         self.orders_done.append(people)
                     elif people in self.orders_done:
                         print("There was a problem...some one was processes twices")
-                        sys.exit()            
+                        sys.exit()        
+                            
             self.direction_A = metro.direction_A
             self.direction_B = metro.direction_B
             self.current_floor_A = metro.current_floor_lift_A
@@ -763,7 +777,7 @@ class DualLiftSystemAdaptive:
             
             self.lift_A_population = metro.lift_A_Population
             self.lift_B_population = metro.lift_B_Population
-            
+            print(metro.orders_done)
             for passenger in metro.pending_orders:
                 if (passenger not in metro.already_picked_A) and (passenger not in metro.already_picked_B) and (passenger not in metro.orders_done):
                     updated_passenger_Data.append(passenger)
@@ -854,7 +868,48 @@ class DualLiftSystemAdaptive:
         print(f"Lift_A_population: {VIP.lift_A_population}, Lift_B_population: {VIP.lift_B_population}")
         
         return updated_passenger_Data   
- 
+    
+    def compute_dwell_time( self,num_boarding,num_alighting,door_overhead=2.0,min_time=0.8,max_time=2,max_parallel=2):
+        """
+        Compute the dwell time for an elevator stop with batched parallel boarding and alighting.
+
+        Parameters:
+        num_boarding (int): Number of passengers boarding.
+        num_alighting (int): Number of passengers alighting.
+        door_overhead (float): Fixed time for door opening/closing.
+        min_time (float): Minimum time per passenger to board/alight.
+        max_time (float): Maximum time per passenger to board/alight.
+        max_parallel (int): Max number of passengers that can board or alight simultaneously.
+
+        Returns:
+        float: Total dwell time.
+        """
+        if num_boarding + num_alighting == 0:
+            return 0.0
+
+        # Random time per passenger
+        boarding_times = [random.uniform(min_time, max_time) for _ in range(num_boarding)]
+        alighting_times = [random.uniform(min_time, max_time) for _ in range(num_alighting)]
+
+        # Process in batches, each of size up to `max_parallel`
+        def process_in_batches(times, max_parallel):
+            total = 0.0
+            for i in range(0, len(times), max_parallel):
+                batch = times[i:i + max_parallel]
+                batch_time = max(batch)  # batch completes when the slowest person in it finishes
+                total += batch_time
+            return total
+
+        # Time taken separately for boarding and alighting (batched)
+        boarding_total = process_in_batches(boarding_times, max_parallel)
+        alighting_total = process_in_batches(alighting_times, max_parallel)
+
+        # They happen in parallel, so total time is max of the two + overhead
+        combined_passenger_time = max(boarding_total, alighting_total)
+        total_dwell_time = door_overhead + combined_passenger_time
+
+        return total_dwell_time
+
     def run_simulation(self, passenger_data):
         '''This simulates the lift'''       
         people_not_assigned = []
@@ -862,13 +917,8 @@ class DualLiftSystemAdaptive:
         number_lift_A_picked=0
         dropped_by_B=0
         dropped_by_A=0
-        passenger_arrived = []
         while passenger_data or self.pending_orders_A or self.pending_orders_B:
             #first checking the status of the system
-            print(f"Passenger in lift A: {self.passengers_in_lift_A}")
-            print(f"Passenger in lift B: {self.passengers_in_lift_B}")
-            print(f"pending orders in lift A: {self.pending_orders_A}")
-            print(f"pending orders in lift B: {self.pending_orders_B}")
             if self.pending_orders_A:
                 self.status_A=True
             else:
@@ -887,8 +937,8 @@ class DualLiftSystemAdaptive:
                 pending_orders = [p for p in passenger_data if p[3] <= self.current_time]
                 
                 for passenger in pending_orders:
-                    if passenger not in passenger_arrived:
-                        passenger_arrived.append(passenger)
+                    if passenger not in self.passenger_arrived:
+                        self.passenger_arrived.append(passenger)
                         floor = passenger[1]
                         self.floor_passenger_count[floor]+=1
             
@@ -927,7 +977,8 @@ class DualLiftSystemAdaptive:
             for person in list(people_not_assigned):
                 people_not_assigned, self.pending_orders_A = self.reassign_passenger(person, people_not_assigned, self.pending_orders_A, self.current_floor_A, self.direction_A)
                 people_not_assigned, self.pending_orders_B = self.reassign_passenger(person, people_not_assigned, self.pending_orders_B, self.current_floor_B, self.direction_B)
-                
+            
+            
             if self.pending_orders_A:
                 seen = set()
                 self.pending_orders_A = [x for x in self.pending_orders_A if not (x in seen or seen.add(x))]
@@ -970,14 +1021,20 @@ class DualLiftSystemAdaptive:
                 print("There was an error")
                 raise Exception("There is an Error")
 
-            self.current_time += self.floor_time + (number_lift_B_picked + number_lift_A_picked + dropped_by_B + dropped_by_A)*self.passenger_inout
+            # self.current_time += self.floor_time + (number_lift_B_picked + number_lift_A_picked + dropped_by_B + dropped_by_A)*self.passenger_inout
             
-            self.time_elapsed += self.floor_time + (number_lift_B_picked + number_lift_A_picked + dropped_by_B + dropped_by_A)*self.passenger_inout
+            # self.time_elapsed += self.floor_time + (number_lift_B_picked + number_lift_A_picked + dropped_by_B + dropped_by_A)*self.passenger_inout
+
+            dwell_time_B = self.compute_dwell_time(num_boarding=number_lift_B_picked, num_alighting=dropped_by_B)
+            dwell_time_A = self.compute_dwell_time(num_boarding=number_lift_A_picked, num_alighting=dropped_by_A)
+            self.current_time += self.floor_time + dwell_time_B + dwell_time_A
+            self.time_elapsed += self.floor_time + dwell_time_B + dwell_time_A
+
             
             count_greater_than_T_high_VIP = sum(1 for value in self.current_density if value > self.T_high_VIP)
             
             if (np.mean(self.current_density) > self.T_high_oscillation) or (max(self.current_density)>=self.T_high_VIP and count_greater_than_T_high_VIP==1):
-                self.time_above_threshold += self.floor_time + (number_lift_B_picked + number_lift_A_picked + dropped_by_B + dropped_by_A)*self.passenger_inout
+                self.time_above_threshold += self.floor_time + dwell_time_B + dwell_time_A
             
             if np.mean(self.current_density) >= self.T_high_oscillation and self.time_above_threshold >= self.t_persistence and (self.current_mode=="normal"):
                 #the mean of the current densities is higher than the threshold given and time above this threshold is also more than the t_persistence this means that this change is not sudden. Now we need to switch to oscillation system, to do so we need to first empty the lifts by serving the passengers in the lifts and then stop picking passengers.
@@ -999,24 +1056,44 @@ class DualLiftSystemAdaptive:
                 
             
             if not self.picking and (self.lift_A_population==0 and self.lift_B_population==0) and self.current_mode=="oscillation":
-                print("preparing to switch to oscillatin")
-                test_A = self.pending_orders_A
-                test_B = self.pending_orders_B
+                print("preparing to switch to oscillation")
+                people_not_assigned = []
+                self.passenger_arrived = []
                 passenger_data = self.switch_to_oscillation(passenger_data)
                 
                 self.current_mode = "normal"
                 self.picking = True
+                
                 self.floor_passenger_count = [0] * (self.num_floors + 1)
+                temporary_pending_orders = self.pending_orders_A + self.pending_orders_B
+                
+                for passenger in temporary_pending_orders:
+                    # input(f"passenger = {passenger}")
+                    if passenger not in self.passenger_arrived:
+                        self.passenger_arrived.append(passenger)
+                        floor = passenger[1]
+                        self.floor_passenger_count[floor]+=1
+                
                 self.time_above_threshold = 0
                 
             elif not self.picking and (self.lift_A_population==0 and self.lift_B_population==0) and self.current_mode == "VIP":
                 print("Preparing to switch to VIP")
+                people_not_assigned = []
+                self.passenger_arrived = []
                 passenger_data = self.switch_to_VIP(passenger_data)
-                print(passenger_data)
                 self.current_mode = "normal"
                 self.picking = True
+                
                 self.floor_passenger_count = [0] * (self.num_floors + 1)
+                temporary_pending_orders = self.pending_orders_A + self.pending_orders_B
                 self.time_above_threshold = 0
+
+                for passenger in temporary_pending_orders:
+                    input(f"passenger = {passenger}")
+                    if passenger not in self.passenger_arrived:
+                        self.passenger_arrived.append(passenger)
+                        floor = passenger[1]
+                        self.floor_passenger_count[floor]+=1
             
             if self.lift_A_population==0 and self.pending_orders_A and not passenger_data:
                 for order in self.pending_orders_A:
@@ -1028,3 +1105,4 @@ class DualLiftSystemAdaptive:
                     self.pending_orders_B.remove(order)
                     passenger_data.append(order)         
         return passenger_data
+
